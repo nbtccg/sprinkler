@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprinkler Control</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a1628;
+    --surface: #0f2040;
+    --surface2: #162a50;
+    --border: #1e3a6e;
+    --accent: #00c896;
+    --accent2: #0084ff;
+    --warn: #ff6b35;
+    --text: #e8f4f8;
+    --muted: #6b8cae;
+    --active-glow: 0 0 20px rgba(0,200,150,0.4);
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(0,132,255,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 100%, rgba(0,200,150,0.06) 0%, transparent 60%);
+  }
+
+  header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(10,22,40,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo span { color: var(--accent); }
+
+  .weather-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .weather-badge:hover { border-color: var(--accent2); color: var(--text); }
+  .weather-badge .temp { font-family: 'DM Mono', monospace; color: var(--text); font-weight: 500; }
+
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 16px 24px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  nav button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { padding: 24px; max-width: 900px; margin: 0 auto; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ---- ZONES TAB ---- */
+  .zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .zone-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .zone-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .zone-card.running { border-color: var(--accent); box-shadow: var(--active-glow); }
+  .zone-card.running::before { opacity: 1; }
+  .zone-card.skipped { border-color: var(--warn); opacity: 0.7; }
+
+  .zone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .zone-name-wrap { flex: 1; }
+  .zone-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.1em;
+  }
+  .zone-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .toggle {
+    width: 44px; height: 24px;
+    background: var(--surface2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+    flex-shrink: 0;
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    background: var(--muted);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: all 0.3s;
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle.on::after { left: 22px; background: white; }
+
+  .zone-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .meta-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .meta-pill .val { color: var(--text); }
+
+  .zone-actions { display: flex; gap: 8px; }
+
+  .btn {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-run {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    flex: 1;
+  }
+  .btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-run:active { transform: translateY(0); }
+  .btn-edit {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-edit:hover { color: var(--text); border-color: var(--accent2); }
+  .btn-stop {
+    background: rgba(255,107,53,0.15);
+    color: var(--warn);
+    border: 1px solid rgba(255,107,53,0.3);
+    flex: 1;
+  }
+
+  .running-bar {
+    display: none;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .running-bar.active { display: block; }
+  .running-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    animation: progress 1s linear infinite;
+    width: 40%;
+  }
+  @keyframes progress {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+  }
+
+  .run-timer {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: none;
+  }
+  .run-timer.active { display: block; }
+
+  /* ---- SCHEDULE TAB ---- */
+  .schedule-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .schedule-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s;
+  }
+  .schedule-item:hover { border-color: var(--accent2); }
+
+  .schedule-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 80px;
+  }
+
+  .schedule-info { flex: 1; }
+  .schedule-days {
+    display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .day-chip {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--surface2);
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .day-chip.on { background: rgba(0,200,150,0.15); color: var(--accent); }
+
+  .schedule-toggle { margin-left: auto; }
+
+  .add-btn {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    transition: all 0.2s;
+  }
+  .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* ---- WEATHER TAB ---- */
+  .weather-config {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .weather-config h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .form-row { margin-bottom: 16px; }
+  .form-row label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .form-row input, .form-row select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--accent2); }
+  .form-row select option { background: var(--surface2); }
+
+  .skip-rules { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .skip-rule {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .skip-rule-label { font-size: 0.85rem; }
+  .skip-rule-label span { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+  .weather-status {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .weather-icon { font-size: 2.5rem; }
+  .weather-details h2 { font-size: 1.5rem; font-weight: 800; }
+  .weather-details p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+  .skip-active {
+    margin-left: auto;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    color: var(--warn);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* ---- SETTINGS TAB ---- */
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .settings-section h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .gpio-table { width: 100%; border-collapse: collapse; }
+  .gpio-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .gpio-table td {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(30,58,110,0.5);
+    font-size: 0.85rem;
+    vertical-align: middle;
+  }
+  .gpio-table tr:last-child td { border-bottom: none; }
+
+  .gpio-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    width: 80px;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+  }
+  .gpio-input:focus { border-color: var(--accent2); }
+
+  .name-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: 150px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .name-input:focus { border-color: var(--accent2); }
+
+  .save-btn {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: all 0.2s;
+  }
+  .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    width: 100%;
+    max-width: 420px;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-cancel {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    flex: 1;
+  }
+  .btn-save {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    flex: 1;
+  }
+
+  .days-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .day-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Syne', sans-serif;
+  }
+  .day-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .zone-checkboxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .zone-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: border-color 0.2s;
+  }
+  .zone-checkbox input { accent-color: var(--accent); width: 14px; height: 14px; }
+  .zone-checkbox.checked { border-color: var(--accent); }
+
+  @media (max-width: 480px) {
+    header { flex-wrap: wrap; gap: 10px; }
+    .zones-grid { grid-template-columns: 1fr; }
+    .gpio-table th:nth-child(3), .gpio-table td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">💧</div>
+    <h1>Lawn<span>Control</span></h1>
+  </div>
+  <div class="weather-badge" onclick="switchTab('weather')">
+    <span id="weather-icon-small">⛅</span>
+    <span class="temp" id="header-temp">72°F</span>
+    <span id="header-desc">Partly Cloudy</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="switchTab('zones')">Zones</button>
+  <button onclick="switchTab('schedule')">Schedule</button>
+  <button onclick="switchTab('weather')">Weather</button>
+  <button onclick="switchTab('settings')">Settings</button>
+</nav>
+
+<main>
+
+  <!-- ZONES TAB -->
+  <div class="tab-content active" id="tab-zones">
+    <div class="zones-grid" id="zones-grid"></div>
+  </div>
+
+  <!-- SCHEDULE TAB -->
+  <div class="tab-content" id="tab-schedule">
+    <div class="schedule-list" id="schedule-list"></div>
+    <button class="add-btn" onclick="openAddSchedule()">＋ Add Schedule</button>
+  </div>
+
+  <!-- WEATHER TAB -->
+  <div class="tab-content" id="tab-weather">
+    <div class="weather-status" style="margin-bottom:16px;">
+      <div class="weather-icon" id="weather-icon-big">⛅</div>
+      <div class="weather-details">
+        <h2 id="weather-temp-big">72°F</h2>
+        <p id="weather-desc-big">Partly Cloudy · Humidity 45%</p>
+        <p id="weather-precip" style="color: var(--accent2); margin-top:4px; font-size:0.8rem;">No rain expected today</p>
+      </div>
+      <div class="skip-active" id="skip-indicator" style="display:none;">
+        ⚠️ Skip<br>Active
+      </div>
+    </div>
+
+    <div class="weather-config">
+      <h3>Weather API</h3>
+      <div class="form-row">
+        <label>OpenWeatherMap API Key</label>
+        <input type="text" id="api-key" placeholder="Enter your API key..." />
+      </div>
+      <div class="form-row">
+        <label>Location (City, Country)</label>
+        <input type="text" id="weather-location" placeholder="e.g. Austin, US" />
+      </div>
+      <button class="save-btn" onclick="saveWeatherConfig()">Connect Weather</button>
+    </div>
+
+    <div class="weather-config">
+      <h3>Auto-Skip Rules</h3>
+      <div class="skip-rules">
+        <div class="skip-rule">
+          <div class="skip-rule-label">
+            Skip if rain forecast
+            <span>Precipitation chance &gt; threshold</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="rain-threshold" value="40" min="0" max="100">
+            <span style="font-size:0.8rem;color:var(--muted);">%</span>
+            <div class="toggle on" id="toggle-rain" onclick="toggleEl(this)"></div>
+          </div>
+        </div>
+        <div class="skip-rule">
+          <div class="skip-rule-label">
+            Skip if temp below
+            <span>Too cold for watering</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="cold-threshold" value="35" min="0" max="60">
+            <span style="font-size:0.8rem;color:var(--muted);">°F</span>
+            <div class="toggle on" id="toggle-cold" onclick="toggleEl(this)"></div>
+          </div>
+        </div>
+        <div class="skip-rule">
+          <div class="skip-rule-label">
+            Skip if wind speed above
+            <span>High winds reduce efficiency</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="wind-threshold" value="20" min="0" max="60">
+            <span style="font-size:0.8rem;color:var(--muted);">mph</span>
+            <div class="toggle" id="toggle-wind" onclick="toggleEl(this)"></div>
+          </div>
+        </div>
+      </div>
+      <button class="save-btn" onclick="saveSkipRules()">Save Rules</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="tab-content" id="tab-settings">
+    <div class="settings-section">
+      <h3>Zone & GPIO Configuration</h3>
+      <table class="gpio-table">
+        <thead>
+          <tr>
+            <th>Zone</th>
+            <th>Name</th>
+            <th style="text-align:center;">GPIO Pin</th>
+            <th style="text-align:center;">Duration (min)</th>
+          </tr>
+        </thead>
+        <tbody id="gpio-tbody"></tbody>
+      </table>
+      <button class="save-btn" onclick="saveSettings()">Save Configuration</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>System</h3>
+      <div class="skip-rule" style="margin-bottom:10px;">
+        <div class="skip-rule-label">
+          Master enable
+          <span>Disable all watering globally</span>
+        </div>
+        <div class="toggle on" id="toggle-master" onclick="toggleEl(this)"></div>
+      </div>
+      <div class="skip-rule">
+        <div class="skip-rule-label">
+          GPIO active high
+          <span>Relay trigger logic (HIGH = on)</span>
+        </div>
+        <div class="toggle on" id="toggle-active-high" onclick="toggleEl(this)"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Schedule Modal -->
+<div class="modal-overlay" id="schedule-modal">
+  <div class="modal">
+    <h2>Add Schedule</h2>
+    <div class="form-row">
+      <label>Start Time</label>
+      <input type="time" id="sched-time" value="06:00" />
+    </div>
+    <div class="form-row">
+      <label>Days</label>
+      <div class="days-picker">
+        <button class="day-btn on" data-day="Mon">Mo</button>
+        <button class="day-btn on" data-day="Tue">Tu</button>
+        <button class="day-btn on" data-day="Wed">We</button>
+        <button class="day-btn on" data-day="Thu">Th</button>
+        <button class="day-btn on" data-day="Fri">Fr</button>
+        <button class="day-btn" data-day="Sat">Sa</button>
+        <button class="day-btn" data-day="Sun">Su</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Zones to water</label>
+      <div class="zone-checkboxes" id="modal-zones"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="saveSchedule()">Add Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- STATE ----
+let zones = JSON.parse(localStorage.getItem('zones') || 'null') || [
+  { id:1, name:"Front Lawn",    gpio:17, duration:10, enabled:true },
+  { id:2, name:"Back Lawn",     gpio:18, duration:15, enabled:true },
+  { id:3, name:"Side Garden",   gpio:22, duration:8,  enabled:true },
+  { id:4, name:"Flower Beds",   gpio:23, duration:6,  enabled:true },
+  { id:5, name:"Veggie Patch",  gpio:24, duration:12, enabled:true },
+  { id:6, name:"Driveway Edge", gpio:25, duration:5,  enabled:true },
+  { id:7, name:"Back Garden",   gpio:27, duration:10, enabled:true },
+];
+
+let schedules = JSON.parse(localStorage.getItem('schedules') || 'null') || [
+  { id:1, time:"06:00", days:["Mon","Wed","Fri"], zones:[1,2,3], enabled:true },
+  { id:2, time:"19:00", days:["Sat","Sun"],       zones:[4,5,6,7], enabled:true },
+];
+
+let runningTimers = {};
+
+// ---- TABS ----
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('nav button')[['zones','schedule','weather','settings'].indexOf(tab)].classList.add('active');
+}
+
+// ---- ZONES ----
+function renderZones() {
+  const grid = document.getElementById('zones-grid');
+  grid.innerHTML = zones.map(z => {
+    const isRunning = !!runningTimers[z.id];
+    return `
+    <div class="zone-card ${isRunning ? 'running' : ''}" id="zone-card-${z.id}">
+      <div class="running-bar ${isRunning ? 'active' : ''}"><div class="running-bar-fill"></div></div>
+      <div class="zone-header">
+        <div class="zone-name-wrap">
+          <div class="zone-number">ZONE ${z.id}</div>
+          <div class="zone-name">${z.name}</div>
+        </div>
+        <div class="toggle ${z.enabled ? 'on' : ''}" onclick="toggleZone(${z.id})"></div>
+      </div>
+      <div class="zone-meta">
+        <div class="meta-pill">📍 GPIO <span class="val">${z.gpio}</span></div>
+        <div class="meta-pill">⏱ <span class="val">${z.duration}m</span></div>
+      </div>
+      <div class="run-timer ${isRunning ? 'active' : ''}" id="timer-${z.id}">Running...</div>
+      <div class="zone-actions">
+        ${isRunning
+          ? `<button class="btn btn-stop" onclick="stopZone(${z.id})">⏹ Stop</button>`
+          : `<button class="btn btn-run" onclick="runZone(${z.id})" ${!z.enabled ? 'disabled style="opacity:0.4"' : ''}>▶ Run Now</button>`
+        }
+        <button class="btn btn-edit" onclick="editZone(${z.id})">✏</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleZone(id) {
+  const z = zones.find(z => z.id === id);
+  z.enabled = !z.enabled;
+  saveZones();
+  renderZones();
+}
+
+function runZone(id) {
+  const z = zones.find(z => z.id === id);
+  if (!z.enabled) return;
+  const totalSecs = z.duration * 60;
+  let elapsed = 0;
+  runningTimers[id] = setInterval(() => {
+    elapsed++;
+    const rem = totalSecs - elapsed;
+    const m = Math.floor(rem / 60).toString().padStart(2,'0');
+    const s = (rem % 60).toString().padStart(2,'0');
+    const el = document.getElementById('timer-' + id);
+    if (el) el.textContent = `Running · ${m}:${s} remaining`;
+    if (elapsed >= totalSecs) stopZone(id);
+  }, 1000);
+  renderZones();
+  showToast(`Zone ${id}: ${z.name} started`);
+}
+
+function stopZone(id) {
+  clearInterval(runningTimers[id]);
+  delete runningTimers[id];
+  renderZones();
+  showToast(`Zone ${id} stopped`);
+}
+
+function editZone(id) {
+  const z = zones.find(z => z.id === id);
+  const name = prompt("Zone name:", z.name);
+  if (name) { z.name = name; saveZones(); renderZones(); }
+}
+
+function saveZones() {
+  localStorage.setItem('zones', JSON.stringify(zones));
+}
+
+// ---- SCHEDULE ----
+function renderSchedule() {
+  const list = document.getElementById('schedule-list');
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  list.innerHTML = schedules.map(s => `
+    <div class="schedule-item">
+      <div class="schedule-time">${s.time}</div>
+      <div class="schedule-info">
+        <div style="font-size:0.85rem;font-weight:600;">${s.zones.length} zone${s.zones.length>1?'s':''} · ${s.zones.map(id => {const z=zones.find(z=>z.id===id); return z?z.name.split(' ')[0]:'?';}).join(', ')}</div>
+        <div class="schedule-days">
+          ${days.map(d => `<span class="day-chip ${s.days.includes(d)?'on':''}">${d}</span>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="toggle ${s.enabled?'on':''}" onclick="toggleSchedule(${s.id})"></div>
+        <button class="btn btn-edit" onclick="deleteSchedule(${s.id})" style="color:var(--warn);">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleSchedule(id) {
+  const s = schedules.find(s => s.id === id);
+  s.enabled = !s.enabled;
+  localStorage.setItem('schedules', JSON.stringify(schedules));
+  renderSchedule();
+}
+
+function deleteSchedule(id) {
+  if (!confirm('Delete this schedule?')) return;
+  schedules = schedules.filter(s => s.id !== id);
+  localStorage.setItem('schedules', JSON.stringify(schedules));
+  renderSchedule();
+}
+
+function openAddSchedule() {
+  const zc = document.getElementById('modal-zones');
+  zc.innerHTML = zones.map(z => `
+    <label class="zone-checkbox" id="zcheck-${z.id}">
+      <input type="checkbox" value="${z.id}" onchange="updateZoneCheck(${z.id})"> Zone ${z.id}: ${z.name.split(' ')[0]}
+    </label>
+  `).join('');
+  document.getElementById('schedule-modal').classList.add('open');
+}
+
+function updateZoneCheck(id) {
+  const cb = document.querySelector(`#zcheck-${id} input`);
+  document.getElementById('zcheck-'+id).classList.toggle('checked', cb.checked);
+}
+
+function closeModal() {
+  document.getElementById('schedule-modal').classList.remove('open');
+}
+
+function saveSchedule() {
+  const time = document.getElementById('sched-time').value;
+  const days = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
+  const zoneIds = [...document.querySelectorAll('#modal-zones input:checked')].map(i => parseInt(i.value));
+  if (!days.length) return alert('Select at least one day');
+  if (!zoneIds.length) return alert('Select at least one zone');
+  const newId = schedules.length ? Math.max(...schedules.map(s=>s.id)) + 1 : 1;
+  schedules.push({ id: newId, time, days, zones: zoneIds, enabled: true });
+  localStorage.setItem('schedules', JSON.stringify(schedules));
+  renderSchedule();
+  closeModal();
+  showToast('Schedule added!');
+}
+
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('on'));
+});
+
+// ---- SETTINGS GPIO ----
+function renderSettings() {
+  const tbody = document.getElementById('gpio-tbody');
+  tbody.innerHTML = zones.map(z => `
+    <tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:0.8rem;">Z${z.id}</td>
+      <td><input class="name-input" type="text" value="${z.name}" id="name-${z.id}" /></td>
+      <td style="text-align:center;"><input class="gpio-input" type="number" value="${z.gpio}" id="gpio-${z.id}" min="1" max="27" /></td>
+      <td style="text-align:center;"><input class="gpio-input" type="number" value="${z.duration}" id="dur-${z.id}" min="1" max="120" /></td>
+    </tr>
+  `).join('');
+}
+
+function saveSettings() {
+  zones.forEach(z => {
+    const nameEl = document.getElementById('name-'+z.id);
+    const gpioEl = document.getElementById('gpio-'+z.id);
+    const durEl  = document.getElementById('dur-'+z.id);
+    if (nameEl) z.name = nameEl.value;
+    if (gpioEl) z.gpio = parseInt(gpioEl.value);
+    if (durEl)  z.duration = parseInt(durEl.value);
+  });
+  saveZones();
+  renderZones();
+  showToast('Configuration saved!');
+}
+
+// ---- WEATHER ----
+function saveWeatherConfig() {
+  const key = document.getElementById('api-key').value;
+  const loc = document.getElementById('weather-location').value;
+  localStorage.setItem('wx-key', key);
+  localStorage.setItem('wx-loc', loc);
+  if (key && loc) { fetchWeather(key, loc); }
+  else showToast('Enter API key & location');
+}
+
+function saveSkipRules() {
+  showToast('Skip rules saved!');
+}
+
+async function fetchWeather(key, loc) {
+  try {
+    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(loc)}&appid=${key}&units=imperial`);
+    const data = await res.json();
+    if (data.cod !== 200) throw new Error(data.message);
+    const temp = Math.round(data.main.temp);
+    const desc = data.weather[0].description;
+    const hum  = data.main.humidity;
+    const wind = Math.round(data.wind.speed);
+    const icon = getWeatherIcon(data.weather[0].main);
+
+    document.getElementById('weather-icon-small').textContent = icon;
+    document.getElementById('header-temp').textContent = temp + '°F';
+    document.getElementById('header-desc').textContent = desc;
+    document.getElementById('weather-icon-big').textContent = icon;
+    document.getElementById('weather-temp-big').textContent = temp + '°F';
+    document.getElementById('weather-desc-big').textContent = `${desc} · Humidity ${hum}%`;
+
+    checkSkipRules(temp, hum, wind, data.weather[0].main);
+    showToast('Weather updated!');
+  } catch(e) {
+    showToast('Weather error: ' + e.message);
+  }
+}
+
+function checkSkipRules(temp, hum, wind, main) {
+  const rainOn  = document.getElementById('toggle-rain').classList.contains('on');
+  const coldOn  = document.getElementById('toggle-cold').classList.contains('on');
+  const windOn  = document.getElementById('toggle-wind').classList.contains('on');
+  const rainPct = parseInt(document.getElementById('rain-threshold').value);
+  const coldThr = parseInt(document.getElementById('cold-threshold').value);
+  const windThr = parseInt(document.getElementById('wind-threshold').value);
+
+  const isRainy = ['Rain','Drizzle','Thunderstorm','Snow'].includes(main);
+  let skipReason = null;
+  if (rainOn && isRainy) skipReason = 'Rain expected — skipping watering';
+  if (coldOn && temp < coldThr) skipReason = `Temp ${temp}°F below ${coldThr}°F — skipping`;
+  if (windOn && wind > windThr) skipReason = `Wind ${wind}mph above ${windThr}mph — skipping`;
+
+  const indicator = document.getElementById('skip-indicator');
+  const precipEl  = document.getElementById('weather-precip');
+  if (skipReason) {
+    indicator.style.display = 'block';
+    precipEl.textContent = '⚠ ' + skipReason;
+    precipEl.style.color = 'var(--warn)';
+  } else {
+    indicator.style.display = 'none';
+    precipEl.textContent = 'Conditions OK — watering will proceed';
+    precipEl.style.color = 'var(--accent)';
+  }
+}
+
+function getWeatherIcon(main) {
+  const icons = {Rain:'🌧', Drizzle:'🌦', Thunderstorm:'⛈', Snow:'🌨', Clear:'☀️', Clouds:'⛅', Mist:'🌫', Fog:'🌫'};
+  return icons[main] || '🌤';
+}
+
+function toggleEl(el) { el.classList.toggle('on'); }
+
+// ---- TOAST ----
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ---- INIT ----
+document.getElementById('api-key').value = localStorage.getItem('wx-key') || '';
+document.getElementById('weather-location').value = localStorage.getItem('wx-loc') || '';
+
+renderZones();
+renderSchedule();
+renderSettings();
+
+const savedKey = localStorage.getItem('wx-key');
+const savedLoc = localStorage.getItem('wx-loc');
+if (savedKey && savedLoc) fetchWeather(savedKey, savedLoc);
+</script>
+</body>
+</html>

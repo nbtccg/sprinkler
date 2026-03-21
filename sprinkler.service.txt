@@ -1,0 +1,14 @@
+[Unit]
+Description=Lawn Sprinkler Controller
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/sprinkler
+ExecStart=/usr/bin/python3 /home/pi/sprinkler/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
