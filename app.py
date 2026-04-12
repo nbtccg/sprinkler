@@ -12,7 +12,6 @@ Run:
 """
 
 import json
-import os
 import threading
 import time
 import logging
@@ -23,15 +22,19 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-# ── GPIO setup ───────────────────────────────────────────────────────────────
+# ── GPIO setup (gpiod v2 API) ─────────────────────────────────────────────────
 try:
     import gpiod
-    chip = gpiod.Chip('gpiochip0')  # Pi 5 pinctrl-rp1
+    from gpiod.line import Direction, Value
+    _chip_path = '/dev/gpiochip0'
+    # Verify chip is accessible
+    with gpiod.Chip(_chip_path) as _c:
+        pass
     ON_PI = True
-except (ImportError, Exception):
+except (ImportError, Exception) as e:
     ON_PI = False
-    chip = None
-    logging.warning("gpiod not available – running in simulation mode.")
+    gpiod = None
+    logging.warning(f"gpiod not available – running in simulation mode. ({e})")
 
 # ── App & config ─────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder=".")
@@ -47,13 +50,13 @@ DATA_FILE = Path(__file__).parent / "config.json"
 
 # Default zone config – overwritten by saved data on startup
 DEFAULT_ZONES = [
-    {"id": 1, "name": "Front Lawn",    "gpio": 17, "duration": 10, "enabled": True},
-    {"id": 2, "name": "Back Lawn",     "gpio": 18, "duration": 15, "enabled": True},
-    {"id": 3, "name": "Side Garden",   "gpio": 22, "duration": 8,  "enabled": True},
-    {"id": 4, "name": "Flower Beds",   "gpio": 23, "duration": 6,  "enabled": True},
-    {"id": 5, "name": "Veggie Patch",  "gpio": 24, "duration": 12, "enabled": True},
-    {"id": 6, "name": "Driveway Edge", "gpio": 25, "duration": 5,  "enabled": True},
-    {"id": 7, "name": "Back Garden",   "gpio": 27, "duration": 10, "enabled": True},
+    {"id": 1, "name": "Front Lawn",    "gpio": 4,  "duration": 10, "enabled": True},
+    {"id": 2, "name": "Back Lawn",     "gpio": 17, "duration": 15, "enabled": True},
+    {"id": 3, "name": "Side Garden",   "gpio": 27, "duration": 8,  "enabled": True},
+    {"id": 4, "name": "Flower Beds",   "gpio": 22, "duration": 6,  "enabled": True},
+    {"id": 5, "name": "Veggie Patch",  "gpio": 10, "duration": 12, "enabled": True},
+    {"id": 6, "name": "Driveway Edge", "gpio": 9,  "duration": 5,  "enabled": True},
+    {"id": 7, "name": "Back Garden",   "gpio": 11, "duration": 10, "enabled": True},
 ]
 
 DEFAULT_SCHEDULES = [
@@ -92,49 +95,45 @@ def save_data():
 
 state = load_data()
 
-# Ensure last_skip key exists in older config files
+# Ensure keys added in later versions exist in older config files
 if "last_skip" not in state:
     state["last_skip"] = None
 
-# ── GPIO helpers ──────────────────────────────────────────────────────────────
-_lines = {}  # pin → gpiod.Line
+# ── GPIO helpers (gpiod v2) ───────────────────────────────────────────────────
+# gpiod v2 uses request_lines() as a context manager per operation.
+# Lines do not need to be held open between calls.
+
+def _gpio_set(pin: int, value: bool):
+    """Set a GPIO pin high or low using gpiod v2 API."""
+    if not ON_PI:
+        log.info(f"[SIM] GPIO {pin} → {'HIGH' if value else 'LOW'}")
+        return
+    try:
+        with gpiod.request_lines(
+            _chip_path,
+            consumer="sprinkler",
+            config={pin: gpiod.LineSettings(direction=Direction.OUTPUT)},
+        ) as req:
+            req.set_value(pin, Value.ACTIVE if value else Value.INACTIVE)
+    except Exception as e:
+        log.error(f"GPIO error on pin {pin}: {e}")
+
+def _relay_on(pin: int):
+    _gpio_set(pin, True if state["active_high"] else False)
+
+def _relay_off(pin: int):
+    _gpio_set(pin, False if state["active_high"] else True)
 
 def init_gpio():
-    if chip is None:
-        return
+    """Drive all zone pins to their OFF state on startup."""
     for zone in state["zones"]:
-        pin = zone["gpio"]
-        line = chip.get_line(pin)
-        line.request(consumer="sprinkler", type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
-        _lines[pin] = line
-        log.info(f"Zone {zone['id']} ({zone['name']}) → GPIO {pin} initialised")
-
-def _relay_on(pin):
-    if pin in _lines:
-        _lines[pin].set_value(1 if state["active_high"] else 0)
-    else:
-        log.info(f"[SIM] GPIO {pin} → ON")
-
-def _relay_off(pin):
-    if pin in _lines:
-        _lines[pin].set_value(0 if state["active_high"] else 1)
-    else:
-        log.info(f"[SIM] GPIO {pin} → OFF")
-
-def _reinit_pin(pin):
-    """Claim a new GPIO pin, e.g. after zone config change."""
-    if chip is None:
-        return
-    if pin in _lines:
-        _lines[pin].release()
-    line = chip.get_line(pin)
-    line.request(consumer="sprinkler", type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
-    _lines[pin] = line
+        _relay_off(zone["gpio"])
+        log.info(f"Zone {zone['id']} ({zone['name']}) → GPIO {zone['gpio']} initialised")
 
 init_gpio()
 
 # ── Zone run state ────────────────────────────────────────────────────────────
-running: dict = {}   # zone_id → {thread, stop_event, start, end}
+running: dict = {}   # zone_id → {thread, stop_event, start, end, duration}
 run_lock = threading.Lock()
 
 def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Event):
@@ -261,7 +260,6 @@ log.info("Scheduler started")
 
 # ── Weather fetcher ───────────────────────────────────────────────────────────
 def fetch_weather_cache():
-    """Fetch weather from OpenWeatherMap and cache result in state."""
     w = state.get("weather", {})
     key = w.get("api_key", "")
     loc = w.get("location", "")
@@ -301,12 +299,10 @@ def _weather_refresh_loop():
 threading.Thread(target=_weather_refresh_loop, daemon=True).start()
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-
 @app.route("/")
 def index():
     return send_from_directory(".", "sprinkler.html")
 
-# ── Zones ──────────────────────────────────────────────────────────────────────
 @app.route("/api/zones", methods=["GET"])
 def get_zones():
     return jsonify(state["zones"])
@@ -316,12 +312,9 @@ def update_zones():
     zones = request.json
     if not isinstance(zones, list):
         return jsonify({"error": "Expected list"}), 400
-    old_pins = {z["id"]: z["gpio"] for z in state["zones"]}
     state["zones"] = zones
     for zone in zones:
-        if zone["gpio"] != old_pins.get(zone["id"]):
-            _reinit_pin(zone["gpio"])
-            _relay_off(zone["gpio"])
+        _relay_off(zone["gpio"])
     save_data()
     return jsonify({"ok": True})
 
@@ -335,7 +328,6 @@ def patch_zone(zone_id):
     save_data()
     return jsonify(zone)
 
-# ── Zone control ───────────────────────────────────────────────────────────────
 @app.route("/api/zones/<int:zone_id>/run", methods=["POST"])
 def run_zone(zone_id):
     body = request.get_json(silent=True, force=True) or {}
@@ -357,7 +349,6 @@ def stop_all_route():
     stop_all()
     return jsonify({"ok": True})
 
-# ── Running status ─────────────────────────────────────────────────────────────
 @app.route("/api/status", methods=["GET"])
 def status():
     now = time.time()
@@ -378,7 +369,6 @@ def status():
         "last_skip": state.get("last_skip"),
     })
 
-# ── Schedules ──────────────────────────────────────────────────────────────────
 @app.route("/api/schedules", methods=["GET"])
 def get_schedules():
     return jsonify(state["schedules"])
@@ -411,7 +401,6 @@ def delete_schedule(sched_id):
     save_data()
     return jsonify({"ok": True})
 
-# ── Weather ────────────────────────────────────────────────────────────────────
 @app.route("/api/weather", methods=["GET"])
 def get_weather():
     return jsonify(state.get("weather", {}))
@@ -424,7 +413,6 @@ def update_weather():
     cached = fetch_weather_cache()
     return jsonify({"ok": True, "cached": cached})
 
-# ── System settings ────────────────────────────────────────────────────────────
 @app.route("/api/system", methods=["GET"])
 def get_system():
     return jsonify({
@@ -445,7 +433,6 @@ def update_system():
     save_data()
     return jsonify({"ok": True})
 
-# ── Logs ──────────────────────────────────────────────────────────────────────
 @app.route("/api/logs", methods=["GET"])
 def get_logs():
     log_file = Path(__file__).parent / "sprinkler.log"
@@ -460,11 +447,8 @@ import atexit
 def cleanup():
     stop_all()
     time.sleep(0.5)
-    for line in _lines.values():
-        line.set_value(0)
-        line.release()
-    if chip is not None:
-        chip.close()
+    for zone in state["zones"]:
+        _relay_off(zone["gpio"])
     log.info("GPIO cleaned up")
 
 # ── Entry point ────────────────────────────────────────────────────────────────
