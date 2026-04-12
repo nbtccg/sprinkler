@@ -1,0 +1,95 @@
+{
+  "zones": [
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 17,
+      "id": 1,
+      "name": "Front Lawn"
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 18,
+      "id": 2,
+      "name": "Aspens"
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 22,
+      "id": 3,
+      "name": "Maples "
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 23,
+      "id": 4,
+      "name": "Patio"
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 24,
+      "id": 5,
+      "name": "Center Lawn"
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 25,
+      "id": 6,
+      "name": "Drip Trees"
+    },
+    {
+      "duration": 10,
+      "enabled": true,
+      "gpio": 27,
+      "id": 7,
+      "name": "Drip Garden"
+    }
+  ],
+  "schedules": [
+    {
+      "time": "22:00",
+      "days": [
+        "Mon",
+        "Wed",
+        "Fri",
+        "Sun"
+      ],
+      "zones": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "enabled": true,
+      "id": 3
+    }
+  ],
+  "weather": {
+    "api_key": "",
+    "location": "",
+    "skip_rain": true,
+    "rain_threshold": 40,
+    "skip_cold": true,
+    "cold_threshold": 35,
+    "skip_wind": true,
+    "wind_threshold": 20,
+    "_cached": {
+      "temp": 56,
+      "humidity": 37,
+      "wind": 1,
+      "description": "broken clouds",
+      "main": "Clouds",
+      "is_rainy": false,
+      "fetched_at": ""
+    }
+  },
+  "active_high": false,
+  "master_enabled": true
+}
