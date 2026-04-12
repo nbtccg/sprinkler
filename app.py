@@ -5,7 +5,7 @@ Runs on Raspberry Pi and controls GPIO pins for zone solenoids.
 Serves the sprinkler.html frontend and exposes a REST API.
 
 Install dependencies:
-    pip install flask flask-cors RPi.GPIO requests
+    pip install flask flask-cors requests gpiod
 
 Run:
     python3 app.py
@@ -24,8 +24,6 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 # ── GPIO setup ───────────────────────────────────────────────────────────────
-# On a real Pi, use RPi.GPIO. On any other machine we fall back to a stub so
-# you can develop / test without hardware attached.
 try:
     import gpiod
     chip = gpiod.Chip('gpiochip0')  # Pi 5 pinctrl-rp1
@@ -34,7 +32,6 @@ except (ImportError, Exception):
     ON_PI = False
     chip = None
     logging.warning("gpiod not available – running in simulation mode.")
-
 
 # ── App & config ─────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder=".")
@@ -46,8 +43,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-DATA_FILE = Path("sprinkler_data.json")
-ACTIVE_HIGH = True          # Set False if your relay board is active-low
+DATA_FILE = Path(__file__).parent / "config.json"
 
 # Default zone config – overwritten by saved data on startup
 DEFAULT_ZONES = [
@@ -87,6 +83,7 @@ def load_data():
         "weather": DEFAULT_WEATHER,
         "active_high": True,
         "master_enabled": True,
+        "last_skip": None,
     }
 
 def save_data():
@@ -95,8 +92,11 @@ def save_data():
 
 state = load_data()
 
-# ── GPIO helpers ──────────────────────────────────────────────────────────────
+# Ensure last_skip key exists in older config files
+if "last_skip" not in state:
+    state["last_skip"] = None
 
+# ── GPIO helpers ──────────────────────────────────────────────────────────────
 _lines = {}  # pin → gpiod.Line
 
 def init_gpio():
@@ -113,17 +113,28 @@ def _relay_on(pin):
     if pin in _lines:
         _lines[pin].set_value(1 if state["active_high"] else 0)
     else:
-        logging.info(f"[SIM] GPIO {pin} → ON")
+        log.info(f"[SIM] GPIO {pin} → ON")
 
 def _relay_off(pin):
     if pin in _lines:
         _lines[pin].set_value(0 if state["active_high"] else 1)
     else:
-        logging.info(f"[SIM] GPIO {pin} → OFF")
+        log.info(f"[SIM] GPIO {pin} → OFF")
 
+def _reinit_pin(pin):
+    """Claim a new GPIO pin, e.g. after zone config change."""
+    if chip is None:
+        return
+    if pin in _lines:
+        _lines[pin].release()
+    line = chip.get_line(pin)
+    line.request(consumer="sprinkler", type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
+    _lines[pin] = line
+
+init_gpio()
 
 # ── Zone run state ────────────────────────────────────────────────────────────
-running: dict[int, dict] = {}   # zone_id → {thread, stop_event, start, end}
+running: dict = {}   # zone_id → {thread, stop_event, start, end}
 run_lock = threading.Lock()
 
 def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Event):
@@ -139,7 +150,7 @@ def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Eve
     with run_lock:
         running.pop(zone_id, None)
 
-def start_zone(zone_id: int, duration_secs: int | None = None) -> dict:
+def start_zone(zone_id: int, duration_secs=None) -> dict:
     zone = next((z for z in state["zones"] if z["id"] == zone_id), None)
     if not zone:
         return {"error": "Zone not found"}
@@ -184,40 +195,7 @@ def stop_all():
         for info in running.values():
             info["stop_event"].set()
 
-# ── Scheduler ─────────────────────────────────────────────────────────────────
-DAY_MAP = {"Mon":0,"Tue":1,"Wed":2,"Thu":3,"Fri":4,"Sat":5,"Sun":6}
-
-def _scheduler_loop():
-    last_triggered: set[tuple] = set()
-    while True:
-        now = datetime.now()
-        current_day = now.strftime("%a")       # Mon … Sun
-        current_time = now.strftime("%H:%M")
-        minute_key = (current_day, current_time)
-
-        if minute_key not in last_triggered:
-            for sched in state["schedules"]:
-                if (sched["enabled"]
-                        and sched["time"] == current_time
-                        and current_day in sched["days"]):
-                    log.info(f"Scheduler firing: schedule {sched['id']}")
-                    # Check weather skip
-                    if _should_skip_weather():
-                        log.info("Skipping due to weather conditions")
-                        continue
-                    for zone_id in sched["zones"]:
-                        start_zone(zone_id)
-                        # Stagger zone starts by their duration to run sequentially
-                        z = next((z for z in state["zones"] if z["id"] == zone_id), None)
-                        if z:
-                            time.sleep(z["duration"] * 60 + 2)
-            last_triggered.add(minute_key)
-            # Prune old keys (keep last 5 minutes worth)
-            if len(last_triggered) > 10:
-                last_triggered.pop()
-
-        time.sleep(15)
-
+# ── Weather skip helpers ───────────────────────────────────────────────────────
 def _should_skip_weather() -> bool:
     w = state.get("weather", {})
     cached = w.get("_cached", {})
@@ -230,6 +208,53 @@ def _should_skip_weather() -> bool:
     if w.get("skip_wind") and cached.get("wind", 0) > w.get("wind_threshold", 20):
         return True
     return False
+
+def _skip_reason() -> str:
+    w = state.get("weather", {})
+    cached = w.get("_cached", {})
+    if w.get("skip_rain") and cached.get("is_rainy"):
+        return "Rain detected"
+    if w.get("skip_cold") and cached.get("temp", 999) < w.get("cold_threshold", 35):
+        return f"Temp {cached.get('temp')}°F below {w.get('cold_threshold')}°F"
+    if w.get("skip_wind") and cached.get("wind", 0) > w.get("wind_threshold", 20):
+        return f"Wind {cached.get('wind')}mph above {w.get('wind_threshold')}mph"
+    return "Weather conditions"
+
+# ── Scheduler ─────────────────────────────────────────────────────────────────
+def _scheduler_loop():
+    last_triggered: set = set()
+    while True:
+        now = datetime.now()
+        current_day = now.strftime("%a")
+        current_time = now.strftime("%H:%M")
+        minute_key = (current_day, current_time)
+
+        if minute_key not in last_triggered:
+            for sched in state["schedules"]:
+                if (sched["enabled"]
+                        and sched["time"] == current_time
+                        and current_day in sched["days"]):
+                    log.info(f"Scheduler firing: schedule {sched['id']}")
+                    if _should_skip_weather():
+                        reason = _skip_reason()
+                        log.info(f"Skipping due to weather: {reason}")
+                        state["last_skip"] = {
+                            "time": datetime.now().isoformat(),
+                            "schedule_id": sched["id"],
+                            "reason": reason,
+                        }
+                        save_data()
+                        continue
+                    for zone_id in sched["zones"]:
+                        start_zone(zone_id)
+                        z = next((z for z in state["zones"] if z["id"] == zone_id), None)
+                        if z:
+                            time.sleep(z["duration"] * 60 + 2)
+            last_triggered.add(minute_key)
+            if len(last_triggered) > 10:
+                last_triggered.pop()
+
+        time.sleep(15)
 
 threading.Thread(target=_scheduler_loop, daemon=True).start()
 log.info("Scheduler started")
@@ -271,13 +296,12 @@ def fetch_weather_cache():
 def _weather_refresh_loop():
     while True:
         fetch_weather_cache()
-        time.sleep(30 * 60)   # refresh every 30 minutes
+        time.sleep(30 * 60)
 
 threading.Thread(target=_weather_refresh_loop, daemon=True).start()
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-# Serve the frontend
 @app.route("/")
 def index():
     return send_from_directory(".", "sprinkler.html")
@@ -289,16 +313,14 @@ def get_zones():
 
 @app.route("/api/zones", methods=["POST"])
 def update_zones():
-    """Replace full zones list (from settings save)."""
     zones = request.json
     if not isinstance(zones, list):
         return jsonify({"error": "Expected list"}), 400
-    # Re-init GPIO for any pin changes
     old_pins = {z["id"]: z["gpio"] for z in state["zones"]}
     state["zones"] = zones
     for zone in zones:
         if zone["gpio"] != old_pins.get(zone["id"]):
-            GPIO.setup(zone["gpio"], GPIO.OUT)
+            _reinit_pin(zone["gpio"])
             _relay_off(zone["gpio"])
     save_data()
     return jsonify({"ok": True})
@@ -316,8 +338,8 @@ def patch_zone(zone_id):
 # ── Zone control ───────────────────────────────────────────────────────────────
 @app.route("/api/zones/<int:zone_id>/run", methods=["POST"])
 def run_zone(zone_id):
-    body = request.json or {}
-    duration_secs = body.get("duration_secs")   # optional override
+    body = request.get_json(silent=True, force=True) or {}
+    duration_secs = body.get("duration_secs")
     result = start_zone(zone_id, duration_secs)
     if "error" in result:
         return jsonify(result), 400
@@ -353,6 +375,7 @@ def status():
         "master_enabled": state["master_enabled"],
         "active_high": state["active_high"],
         "on_pi": ON_PI,
+        "last_skip": state.get("last_skip"),
     })
 
 # ── Schedules ──────────────────────────────────────────────────────────────────
@@ -398,7 +421,6 @@ def update_weather():
     body = request.json or {}
     state["weather"].update({k: v for k, v in body.items() if k != "_cached"})
     save_data()
-    # Trigger immediate refresh
     cached = fetch_weather_cache()
     return jsonify({"ok": True, "cached": cached})
 
@@ -423,10 +445,10 @@ def update_system():
     save_data()
     return jsonify({"ok": True})
 
-# ── Logs (last 100 lines of app log) ──────────────────────────────────────────
+# ── Logs ──────────────────────────────────────────────────────────────────────
 @app.route("/api/logs", methods=["GET"])
 def get_logs():
-    log_file = Path("sprinkler.log")
+    log_file = Path(__file__).parent / "sprinkler.log"
     if log_file.exists():
         lines = log_file.read_text().splitlines()[-100:]
         return jsonify({"lines": lines})
@@ -447,8 +469,7 @@ def cleanup():
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Add file logging
-    fh = logging.FileHandler("sprinkler.log")
+    fh = logging.FileHandler(Path(__file__).parent / "sprinkler.log")
     fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logging.getLogger().addHandler(fh)
 

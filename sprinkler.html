@@ -63,16 +63,11 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 6px 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 0.05em;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--muted); letter-spacing: 0.05em;
   }
   .master-badge.enabled { border-color: var(--accent); color: var(--accent); }
-  .master-badge .dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--muted);
-  }
+  .master-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
   .master-badge.enabled .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
 
   .weather-badge {
@@ -81,10 +76,8 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     padding: 6px 14px;
-    font-size: 0.8rem;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.2s;
+    font-size: 0.8rem; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
   }
   .weather-badge:hover { border-color: var(--accent2); color: var(--text); }
   .weather-badge .temp { font-family: 'DM Mono', monospace; color: var(--text); font-weight: 500; }
@@ -121,22 +114,15 @@
   }
 
   .zone-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+    transition: all 0.3s; position: relative; overflow: hidden;
   }
   .zone-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--accent2), var(--accent));
-    opacity: 0;
-    transition: opacity 0.3s;
+    opacity: 0; transition: opacity 0.3s;
   }
   .zone-card.running { border-color: var(--accent); box-shadow: var(--active-glow); }
   .zone-card.running::before { opacity: 1; }
@@ -147,49 +133,33 @@
   .zone-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
 
   .toggle {
-    width: 44px; height: 24px;
-    background: var(--surface2);
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s;
-    flex-shrink: 0;
+    width: 44px; height: 24px; background: var(--surface2);
+    border-radius: 12px; border: 1px solid var(--border);
+    cursor: pointer; position: relative; transition: all 0.3s; flex-shrink: 0;
   }
   .toggle::after {
-    content: '';
-    position: absolute;
-    width: 18px; height: 18px;
-    background: var(--muted);
-    border-radius: 50%;
-    top: 2px; left: 2px;
-    transition: all 0.3s;
+    content: ''; position: absolute;
+    width: 18px; height: 18px; background: var(--muted);
+    border-radius: 50%; top: 2px; left: 2px; transition: all 0.3s;
   }
   .toggle.on { background: var(--accent); border-color: var(--accent); }
   .toggle.on::after { left: 22px; background: white; }
 
   .zone-meta { display: flex; gap: 12px; margin-bottom: 16px; }
   .meta-pill {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 0.75rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 10px; font-size: 0.75rem;
     display: flex; align-items: center; gap: 5px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
+    color: var(--muted); font-family: 'DM Mono', monospace;
   }
   .meta-pill .val { color: var(--text); }
 
   .zone-actions { display: flex; gap: 8px; }
 
   .btn {
-    border: none; border-radius: 10px;
-    padding: 8px 14px;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem; font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
+    border: none; border-radius: 10px; padding: 8px 14px;
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
     display: flex; align-items: center; gap: 6px;
   }
   .btn-run { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: white; flex: 1; }
@@ -201,12 +171,7 @@
 
   .running-bar { display: none; height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
   .running-bar.active { display: block; }
-  .running-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent2), var(--accent));
-    border-radius: 2px;
-    transition: width 1s linear;
-  }
+  .running-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 2px; transition: width 1s linear; }
 
   .run-timer { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent); margin-bottom: 8px; display: none; }
   .run-timer.active { display: block; }
@@ -214,10 +179,8 @@
   /* ---- SCHEDULE ---- */
   .schedule-list { display: flex; flex-direction: column; gap: 12px; }
   .schedule-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 20px;
     display: flex; align-items: center; gap: 16px;
     transition: border-color 0.2s;
   }
@@ -230,19 +193,17 @@
 
   .add-btn {
     background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white; border: none; border-radius: 12px;
-    padding: 12px 20px;
+    color: white; border: none; border-radius: 12px; padding: 12px 20px;
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
-    cursor: pointer;
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 16px;
-    transition: all 0.2s;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    margin-top: 16px; transition: all 0.2s;
   }
   .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
   /* ---- WEATHER ---- */
   .weather-config { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
   .weather-config h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+
   .form-row { margin-bottom: 16px; }
   .form-row label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
   .form-row input, .form-row select {
@@ -251,7 +212,6 @@
     font-family: 'DM Mono', monospace; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
   }
   .form-row input:focus, .form-row select:focus { border-color: var(--accent2); }
-  .form-row select option { background: var(--surface2); }
 
   .skip-rules { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   .skip-rule {
@@ -277,13 +237,38 @@
     font-size: 0.8rem; font-weight: 700; text-align: center;
   }
 
+  /* ---- SKIP HISTORY BANNER ---- */
+  .skip-banner {
+    display: none;
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    align-items: center;
+    gap: 14px;
+  }
+  .skip-banner.visible { display: flex; }
+  .skip-banner-icon { font-size: 1.4rem; flex-shrink: 0; }
+  .skip-banner-text { flex: 1; }
+  .skip-banner-title { font-size: 0.85rem; font-weight: 700; color: var(--warn); }
+  .skip-banner-detail { font-size: 0.78rem; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .skip-banner-dismiss {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 1rem; padding: 4px;
+    transition: color 0.2s;
+  }
+  .skip-banner-dismiss:hover { color: var(--text); }
+
   /* ---- SETTINGS ---- */
   .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
   .settings-section h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 20px; }
+
   .gpio-table { width: 100%; border-collapse: collapse; }
   .gpio-table th { text-align: left; font-size: 0.75rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; padding: 0 0 10px; border-bottom: 1px solid var(--border); }
   .gpio-table td { padding: 10px 0; border-bottom: 1px solid rgba(30,58,110,0.5); font-size: 0.85rem; vertical-align: middle; }
   .gpio-table tr:last-child td { border-bottom: none; }
+
   .gpio-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; width: 80px; outline: none; transition: border-color 0.2s; text-align: center; }
   .gpio-input:focus { border-color: var(--accent2); }
   .name-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600; width: 150px; outline: none; transition: border-color 0.2s; }
@@ -308,10 +293,8 @@
   .modal-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-    z-index: 500;
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    z-index: 500; display: flex; align-items: center; justify-content: center;
+    padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   .modal {
@@ -336,19 +319,15 @@
 
   /* ---- LOADING ---- */
   .loading-overlay {
-    position: fixed; inset: 0;
-    background: var(--bg);
+    position: fixed; inset: 0; background: var(--bg);
     display: flex; align-items: center; justify-content: center;
-    z-index: 9999;
-    transition: opacity 0.4s;
+    z-index: 9999; transition: opacity 0.4s;
   }
   .loading-overlay.hidden { opacity: 0; pointer-events: none; }
   .loading-spinner {
     width: 40px; height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -407,6 +386,17 @@
 
   <!-- WEATHER TAB -->
   <div class="tab-content" id="tab-weather">
+
+    <!-- Skip banner – shown when a schedule was skipped -->
+    <div class="skip-banner" id="skip-banner">
+      <div class="skip-banner-icon">⛔</div>
+      <div class="skip-banner-text">
+        <div class="skip-banner-title" id="skip-banner-title">Schedule skipped</div>
+        <div class="skip-banner-detail" id="skip-banner-detail"></div>
+      </div>
+      <button class="skip-banner-dismiss" onclick="dismissSkipBanner()" title="Dismiss">✕</button>
+    </div>
+
     <div class="weather-status">
       <div class="weather-icon" id="weather-icon-big">⛅</div>
       <div class="weather-details">
@@ -544,14 +534,15 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── State (always sourced from API, never localStorage) ────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 let zones = [];
 let schedules = [];
-let runningStatus = {};   // zone_id(string) → {elapsed, remaining, duration}
+let runningStatus = {};
 let masterEnabled = true;
 let editingScheduleId = null;
+let lastSeenSkipTime = null;  // track which skip we've already shown
 
-// ─── API helpers ─────────────────────────────────────────────────────────────
+// ─── API helpers ──────────────────────────────────────────────────────────────
 async function api(path, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
   if (body !== null) opts.body = JSON.stringify(body);
@@ -563,7 +554,7 @@ async function api(path, method = 'GET', body = null) {
   return res.json();
 }
 
-// ─── Tabs ────────────────────────────────────────────────────────────────────
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
@@ -626,7 +617,7 @@ async function runZone(id) {
   try {
     await api(`/zones/${id}/run`, 'POST', {});
     showToast(`Zone ${id} started`);
-    await pollStatus(); // immediate update
+    await pollStatus();
   } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
@@ -655,35 +646,52 @@ async function pollStatus() {
     runningStatus = data.running || {};
     masterEnabled = data.master_enabled;
 
-    // Update master badge
     const badge = document.getElementById('master-badge');
     const label = document.getElementById('master-label');
-    if (masterEnabled) {
-      badge.classList.add('enabled');
-      label.textContent = 'ACTIVE';
-    } else {
-      badge.classList.remove('enabled');
-      label.textContent = 'DISABLED';
-    }
+    badge.classList.toggle('enabled', masterEnabled);
+    label.textContent = masterEnabled ? 'ACTIVE' : 'DISABLED';
 
-    // Update toggle-master in settings
     const tm = document.getElementById('toggle-master');
     if (tm) tm.classList.toggle('on', masterEnabled);
-
-    // Update toggle-active-high
     const tah = document.getElementById('toggle-active-high');
     if (tah) tah.classList.toggle('on', data.active_high);
 
+    // Show skip banner if there's a new skip we haven't shown yet
+    if (data.last_skip && data.last_skip.time !== lastSeenSkipTime) {
+      showSkipBanner(data.last_skip);
+    }
+
     renderZones();
   } catch(e) {
-    // Backend unreachable — mark offline
     document.getElementById('master-badge').classList.remove('enabled');
     document.getElementById('master-label').textContent = 'OFFLINE';
   }
 }
 
-// Poll every 3 seconds
 setInterval(pollStatus, 3000);
+
+// ─── Skip banner ──────────────────────────────────────────────────────────────
+function showSkipBanner(skip) {
+  lastSeenSkipTime = skip.time;
+  const when = new Date(skip.time).toLocaleString([], {
+    month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+  document.getElementById('skip-banner-title').textContent =
+    `Schedule ${skip.schedule_id} was skipped`;
+  document.getElementById('skip-banner-detail').textContent =
+    `${skip.reason} · ${when}`;
+  document.getElementById('skip-banner').classList.add('visible');
+
+  // Also update the weather tab indicator
+  document.getElementById('skip-indicator').style.display = 'block';
+  document.getElementById('weather-precip').textContent = `⚠ Last skip: ${skip.reason} · ${when}`;
+  document.getElementById('weather-precip').style.color = 'var(--warn)';
+}
+
+function dismissSkipBanner() {
+  document.getElementById('skip-banner').classList.remove('visible');
+}
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 function renderSchedule() {
@@ -732,7 +740,8 @@ function openAddSchedule() {
   editingScheduleId = null;
   document.getElementById('modal-title').textContent = 'Add Schedule';
   document.getElementById('sched-time').value = '06:00';
-  document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('on', ['Mon','Tue','Wed','Thu','Fri'].includes(b.dataset.day)));
+  document.querySelectorAll('.day-btn').forEach(b =>
+    b.classList.toggle('on', ['Mon','Tue','Wed','Thu','Fri'].includes(b.dataset.day)));
   const zc = document.getElementById('modal-zones');
   zc.innerHTML = zones.map(z => `
     <label class="zone-checkbox" id="zcheck-${z.id}">
@@ -770,7 +779,7 @@ document.querySelectorAll('.day-btn').forEach(btn => {
   btn.addEventListener('click', () => btn.classList.toggle('on'));
 });
 
-// ─── Settings GPIO ────────────────────────────────────────────────────────────
+// ─── Settings ─────────────────────────────────────────────────────────────────
 function renderSettings() {
   const tbody = document.getElementById('gpio-tbody');
   tbody.innerHTML = zones.map(z => `
@@ -852,9 +861,15 @@ function updateWeatherUI(cached) {
   document.getElementById('header-desc').textContent = cached.description;
   document.getElementById('weather-icon-big').textContent = icon;
   document.getElementById('weather-temp-big').textContent = cached.temp + '°F';
-  document.getElementById('weather-desc-big').textContent = `${cached.description} · Humidity ${cached.humidity}%`;
-  document.getElementById('weather-precip').textContent = cached.is_rainy ? '⚠ Rain detected' : 'No rain detected';
-  document.getElementById('weather-precip').style.color = cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
+  document.getElementById('weather-desc-big').textContent =
+    `${cached.description} · Humidity ${cached.humidity}%`;
+  // Only update precip text if there's no skip banner showing
+  if (!document.getElementById('skip-banner').classList.contains('visible')) {
+    document.getElementById('weather-precip').textContent =
+      cached.is_rainy ? '⚠ Rain detected' : 'Conditions OK — watering will proceed';
+    document.getElementById('weather-precip').style.color =
+      cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
+  }
 }
 
 async function loadWeather() {

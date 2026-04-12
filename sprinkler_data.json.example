@@ -2,50 +2,50 @@
   "zones": [
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 17,
+      "enabled": false,
+      "gpio": 4,
       "id": 1,
       "name": "Front Lawn"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 18,
+      "enabled": false,
+      "gpio": 14,
       "id": 2,
       "name": "Aspens"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 22,
+      "enabled": false,
+      "gpio": 15,
       "id": 3,
-      "name": "Maples "
+      "name": "Maples"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 23,
+      "enabled": false,
+      "gpio": 17,
       "id": 4,
       "name": "Patio"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 24,
+      "enabled": false,
+      "gpio": 18,
       "id": 5,
       "name": "Center Lawn"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 25,
+      "enabled": false,
+      "gpio": 27,
       "id": 6,
-      "name": "Drip Trees"
+      "name": "Drip Flowers Trees"
     },
     {
       "duration": 10,
-      "enabled": true,
-      "gpio": 27,
+      "enabled": false,
+      "gpio": 22,
       "id": 7,
       "name": "Drip Garden"
     }
@@ -65,10 +65,11 @@
         3,
         4,
         5,
-        6
+        6,
+        7
       ],
       "enabled": true,
-      "id": 3
+      "id": 1
     }
   ],
   "weather": {
@@ -81,9 +82,9 @@
     "skip_wind": true,
     "wind_threshold": 20,
     "_cached": {
-      "temp": 56,
-      "humidity": 37,
-      "wind": 1,
+      "temp": 65,
+      "humidity": 31,
+      "wind": 3,
       "description": "broken clouds",
       "main": "Clouds",
       "is_rainy": false,
@@ -91,5 +92,6 @@
     }
   },
   "active_high": false,
-  "master_enabled": true
+  "master_enabled": true,
+  "last_skip": null
 }
