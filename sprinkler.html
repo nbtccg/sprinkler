@@ -44,12 +44,7 @@
     z-index: 100;
   }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
+  .logo { display: flex; align-items: center; gap: 12px; }
   .logo-icon {
     width: 36px; height: 36px;
     background: linear-gradient(135deg, var(--accent2), var(--accent));
@@ -57,14 +52,31 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 18px;
   }
-
   .logo h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
   .logo span { color: var(--accent); }
 
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .master-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .master-badge.enabled { border-color: var(--accent); color: var(--accent); }
+  .master-badge .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .master-badge.enabled .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
   .weather-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex; align-items: center; gap: 8px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -78,26 +90,20 @@
   .weather-badge .temp { font-family: 'DM Mono', monospace; color: var(--text); font-weight: 500; }
 
   nav {
-    display: flex;
-    gap: 4px;
+    display: flex; gap: 4px;
     padding: 16px 24px 0;
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
   }
-
   nav button {
-    background: none;
-    border: none;
+    background: none; border: none;
     color: var(--muted);
     font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.85rem; font-weight: 600;
     padding: 10px 16px;
     border-bottom: 2px solid transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-    letter-spacing: 0.02em;
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; letter-spacing: 0.02em;
   }
   nav button:hover { color: var(--text); }
   nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -107,7 +113,7 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* ---- ZONES TAB ---- */
+  /* ---- ZONES ---- */
   .zones-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -134,28 +140,11 @@
   }
   .zone-card.running { border-color: var(--accent); box-shadow: var(--active-glow); }
   .zone-card.running::before { opacity: 1; }
-  .zone-card.skipped { border-color: var(--warn); opacity: 0.7; }
 
-  .zone-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-  }
-
+  .zone-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
   .zone-name-wrap { flex: 1; }
-  .zone-number {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    color: var(--muted);
-    margin-bottom: 4px;
-    letter-spacing: 0.1em;
-  }
-  .zone-name {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
+  .zone-number { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; letter-spacing: 0.1em; }
+  .zone-name { font-size: 1rem; font-weight: 700; letter-spacing: -0.01em; }
 
   .toggle {
     width: 44px; height: 24px;
@@ -179,21 +168,14 @@
   .toggle.on { background: var(--accent); border-color: var(--accent); }
   .toggle.on::after { left: 22px; background: white; }
 
-  .zone-meta {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
+  .zone-meta { display: flex; gap: 12px; margin-bottom: 16px; }
   .meta-pill {
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 4px 10px;
     font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    display: flex; align-items: center; gap: 5px;
     color: var(--muted);
     font-family: 'DM Mono', monospace;
   }
@@ -202,391 +184,204 @@
   .zone-actions { display: flex; gap: 8px; }
 
   .btn {
-    border: none;
-    border-radius: 10px;
+    border: none; border-radius: 10px;
     padding: 8px 14px;
     font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.8rem; font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     display: flex; align-items: center; gap: 6px;
   }
-  .btn-run {
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white;
-    flex: 1;
-  }
+  .btn-run { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: white; flex: 1; }
   .btn-run:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-run:active { transform: translateY(0); }
-  .btn-edit {
-    background: var(--surface2);
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
+  .btn-run:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-edit { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
   .btn-edit:hover { color: var(--text); border-color: var(--accent2); }
-  .btn-stop {
-    background: rgba(255,107,53,0.15);
-    color: var(--warn);
-    border: 1px solid rgba(255,107,53,0.3);
-    flex: 1;
-  }
+  .btn-stop { background: rgba(255,107,53,0.15); color: var(--warn); border: 1px solid rgba(255,107,53,0.3); flex: 1; }
 
-  .running-bar {
-    display: none;
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 2px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
+  .running-bar { display: none; height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
   .running-bar.active { display: block; }
   .running-bar-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--accent2), var(--accent));
     border-radius: 2px;
-    animation: progress 1s linear infinite;
-    width: 40%;
-  }
-  @keyframes progress {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(350%); }
+    transition: width 1s linear;
   }
 
-  .run-timer {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--accent);
-    margin-bottom: 8px;
-    display: none;
-  }
+  .run-timer { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--accent); margin-bottom: 8px; display: none; }
   .run-timer.active { display: block; }
 
-  /* ---- SCHEDULE TAB ---- */
+  /* ---- SCHEDULE ---- */
   .schedule-list { display: flex; flex-direction: column; gap: 12px; }
-
   .schedule-item {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    display: flex; align-items: center; gap: 16px;
     transition: border-color 0.2s;
   }
   .schedule-item:hover { border-color: var(--accent2); }
-
-  .schedule-time {
-    font-family: 'DM Mono', monospace;
-    font-size: 1.3rem;
-    font-weight: 500;
-    color: var(--accent);
-    min-width: 80px;
-  }
-
+  .schedule-time { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 500; color: var(--accent); min-width: 80px; }
   .schedule-info { flex: 1; }
-  .schedule-days {
-    display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap;
-  }
-  .day-chip {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 5px;
-    background: var(--surface2);
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
+  .schedule-days { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .day-chip { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 5px; background: var(--surface2); color: var(--muted); letter-spacing: 0.05em; }
   .day-chip.on { background: rgba(0,200,150,0.15); color: var(--accent); }
-
-  .schedule-toggle { margin-left: auto; }
 
   .add-btn {
     background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white;
-    border: none;
-    border-radius: 12px;
+    color: white; border: none; border-radius: 12px;
     padding: 12px 20px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.9rem;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: flex; align-items: center; gap: 8px;
     margin-top: 16px;
     transition: all 0.2s;
   }
   .add-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-  /* ---- WEATHER TAB ---- */
-  .weather-config {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 16px;
-  }
-
-  .weather-config h3 {
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-
+  /* ---- WEATHER ---- */
+  .weather-config { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+  .weather-config h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
   .form-row { margin-bottom: 16px; }
-  .form-row label {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 6px;
-    font-weight: 600;
-  }
+  .form-row label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
   .form-row input, .form-row select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
   }
   .form-row input:focus, .form-row select:focus { border-color: var(--accent2); }
   .form-row select option { background: var(--surface2); }
 
   .skip-rules { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   .skip-rule {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
   }
   .skip-rule-label { font-size: 0.85rem; }
   .skip-rule-label span { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
 
   .weather-status {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 20px; margin-bottom: 16px;
   }
   .weather-icon { font-size: 2.5rem; }
   .weather-details h2 { font-size: 1.5rem; font-weight: 800; }
   .weather-details p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
   .skip-active {
     margin-left: auto;
-    background: rgba(255,107,53,0.1);
-    border: 1px solid rgba(255,107,53,0.3);
-    color: var(--warn);
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-align: center;
+    background: rgba(255,107,53,0.1); border: 1px solid rgba(255,107,53,0.3);
+    color: var(--warn); border-radius: 10px; padding: 8px 14px;
+    font-size: 0.8rem; font-weight: 700; text-align: center;
   }
 
-  /* ---- SETTINGS TAB ---- */
-  .settings-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 16px;
-  }
-  .settings-section h3 {
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
+  /* ---- SETTINGS ---- */
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
+  .settings-section h3 { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 20px; }
   .gpio-table { width: 100%; border-collapse: collapse; }
-  .gpio-table th {
-    text-align: left;
-    font-size: 0.75rem;
-    color: var(--muted);
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    padding: 0 0 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .gpio-table td {
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(30,58,110,0.5);
-    font-size: 0.85rem;
-    vertical-align: middle;
-  }
+  .gpio-table th { text-align: left; font-size: 0.75rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; padding: 0 0 10px; border-bottom: 1px solid var(--border); }
+  .gpio-table td { padding: 10px 0; border-bottom: 1px solid rgba(30,58,110,0.5); font-size: 0.85rem; vertical-align: middle; }
   .gpio-table tr:last-child td { border-bottom: none; }
-
-  .gpio-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 10px;
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    width: 80px;
-    outline: none;
-    transition: border-color 0.2s;
-    text-align: center;
-  }
+  .gpio-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.85rem; width: 80px; outline: none; transition: border-color 0.2s; text-align: center; }
   .gpio-input:focus { border-color: var(--accent2); }
-
-  .name-input {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 10px;
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    width: 150px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
+  .name-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600; width: 150px; outline: none; transition: border-color 0.2s; }
   .name-input:focus { border-color: var(--accent2); }
 
-  .save-btn {
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    margin-top: 16px;
-    transition: all 0.2s;
-  }
+  .save-btn { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: white; border: none; border-radius: 12px; padding: 12px 24px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; cursor: pointer; margin-top: 16px; transition: all 0.2s; }
   .save-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
+  /* ---- TOAST ---- */
   .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
+    position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--surface2);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    z-index: 999;
-    transition: transform 0.3s ease;
-    white-space: nowrap;
+    background: var(--surface2); border: 1px solid var(--accent);
+    color: var(--accent); border-radius: 12px; padding: 12px 24px;
+    font-size: 0.85rem; font-weight: 700; z-index: 999;
+    transition: transform 0.3s ease; white-space: nowrap;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: var(--warn); color: var(--warn); }
 
   /* ---- MODAL ---- */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
     z-index: 500;
     display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.2s;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
   }
   .modal-overlay.open { opacity: 1; pointer-events: all; }
   .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 28px;
-    width: 100%;
-    max-width: 420px;
-    transform: translateY(20px);
-    transition: transform 0.2s;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; width: 100%; max-width: 420px;
+    transform: translateY(20px); transition: transform 0.2s;
   }
   .modal-overlay.open .modal { transform: translateY(0); }
   .modal h2 { font-size: 1.1rem; font-weight: 800; margin-bottom: 20px; }
   .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-  .btn-cancel {
-    background: var(--surface2);
-    color: var(--muted);
-    border: 1px solid var(--border);
-    flex: 1;
-  }
-  .btn-save {
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white;
-    flex: 1;
-  }
+  .btn-cancel { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); flex: 1; }
+  .btn-save { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: white; flex: 1; }
 
   .days-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .day-btn {
-    width: 38px; height: 38px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-    color: var(--muted);
-    font-size: 0.7rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Syne', sans-serif;
-  }
+  .day-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 0.7rem; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: 'Syne', sans-serif; }
   .day-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
 
-  .zone-checkboxes {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 6px;
-  }
-  .zone-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 10px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: border-color 0.2s;
-  }
+  .zone-checkboxes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .zone-checkbox { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.8rem; transition: border-color 0.2s; }
   .zone-checkbox input { accent-color: var(--accent); width: 14px; height: 14px; }
   .zone-checkbox.checked { border-color: var(--accent); }
+
+  /* ---- LOADING ---- */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.4s;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .loading-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 480px) {
     header { flex-wrap: wrap; gap: 10px; }
     .zones-grid { grid-template-columns: 1fr; }
     .gpio-table th:nth-child(3), .gpio-table td:nth-child(3) { display: none; }
+    .header-right { gap: 6px; }
+    .master-badge { display: none; }
   }
 </style>
 </head>
 <body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+</div>
 
 <header>
   <div class="logo">
     <div class="logo-icon">💧</div>
     <h1>Lawn<span>Control</span></h1>
   </div>
-  <div class="weather-badge" onclick="switchTab('weather')">
-    <span id="weather-icon-small">⛅</span>
-    <span class="temp" id="header-temp">72°F</span>
-    <span id="header-desc">Partly Cloudy</span>
+  <div class="header-right">
+    <div class="master-badge" id="master-badge">
+      <div class="dot"></div>
+      <span id="master-label">OFFLINE</span>
+    </div>
+    <div class="weather-badge" onclick="switchTab('weather')">
+      <span id="weather-icon-small">⛅</span>
+      <span class="temp" id="header-temp">--°F</span>
+      <span id="header-desc">Weather</span>
+    </div>
   </div>
 </header>
 
@@ -612,16 +407,14 @@
 
   <!-- WEATHER TAB -->
   <div class="tab-content" id="tab-weather">
-    <div class="weather-status" style="margin-bottom:16px;">
+    <div class="weather-status">
       <div class="weather-icon" id="weather-icon-big">⛅</div>
       <div class="weather-details">
-        <h2 id="weather-temp-big">72°F</h2>
-        <p id="weather-desc-big">Partly Cloudy · Humidity 45%</p>
-        <p id="weather-precip" style="color: var(--accent2); margin-top:4px; font-size:0.8rem;">No rain expected today</p>
+        <h2 id="weather-temp-big">--°F</h2>
+        <p id="weather-desc-big">No weather data yet</p>
+        <p id="weather-precip" style="color: var(--accent2); margin-top:4px; font-size:0.8rem;"></p>
       </div>
-      <div class="skip-active" id="skip-indicator" style="display:none;">
-        ⚠️ Skip<br>Active
-      </div>
+      <div class="skip-active" id="skip-indicator" style="display:none;">⚠️ Skip<br>Active</div>
     </div>
 
     <div class="weather-config">
@@ -643,7 +436,7 @@
         <div class="skip-rule">
           <div class="skip-rule-label">
             Skip if rain forecast
-            <span>Precipitation chance &gt; threshold</span>
+            <span>Active weather conditions</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="rain-threshold" value="40" min="0" max="100">
@@ -703,14 +496,14 @@
           Master enable
           <span>Disable all watering globally</span>
         </div>
-        <div class="toggle on" id="toggle-master" onclick="toggleEl(this)"></div>
+        <div class="toggle on" id="toggle-master" onclick="toggleMaster(this)"></div>
       </div>
       <div class="skip-rule">
         <div class="skip-rule-label">
           GPIO active high
           <span>Relay trigger logic (HIGH = on)</span>
         </div>
-        <div class="toggle on" id="toggle-active-high" onclick="toggleEl(this)"></div>
+        <div class="toggle on" id="toggle-active-high" onclick="toggleActiveHigh(this)"></div>
       </div>
     </div>
   </div>
@@ -720,7 +513,7 @@
 <!-- Schedule Modal -->
 <div class="modal-overlay" id="schedule-modal">
   <div class="modal">
-    <h2>Add Schedule</h2>
+    <h2 id="modal-title">Add Schedule</h2>
     <div class="form-row">
       <label>Start Time</label>
       <input type="time" id="sched-time" value="06:00" />
@@ -748,44 +541,52 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ---- STATE ----
-let zones = JSON.parse(localStorage.getItem('zones') || 'null') || [
-  { id:1, name:"Front Lawn",    gpio:17, duration:10, enabled:true },
-  { id:2, name:"Back Lawn",     gpio:18, duration:15, enabled:true },
-  { id:3, name:"Side Garden",   gpio:22, duration:8,  enabled:true },
-  { id:4, name:"Flower Beds",   gpio:23, duration:6,  enabled:true },
-  { id:5, name:"Veggie Patch",  gpio:24, duration:12, enabled:true },
-  { id:6, name:"Driveway Edge", gpio:25, duration:5,  enabled:true },
-  { id:7, name:"Back Garden",   gpio:27, duration:10, enabled:true },
-];
+// ─── State (always sourced from API, never localStorage) ────────────────────
+let zones = [];
+let schedules = [];
+let runningStatus = {};   // zone_id(string) → {elapsed, remaining, duration}
+let masterEnabled = true;
+let editingScheduleId = null;
 
-let schedules = JSON.parse(localStorage.getItem('schedules') || 'null') || [
-  { id:1, time:"06:00", days:["Mon","Wed","Fri"], zones:[1,2,3], enabled:true },
-  { id:2, time:"19:00", days:["Sat","Sun"],       zones:[4,5,6,7], enabled:true },
-];
+// ─── API helpers ─────────────────────────────────────────────────────────────
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== null) opts.body = JSON.stringify(body);
+  const res = await fetch('/api' + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || res.statusText);
+  }
+  return res.json();
+}
 
-let runningTimers = {};
-
-// ---- TABS ----
+// ─── Tabs ────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  document.querySelectorAll('nav button')[['zones','schedule','weather','settings'].indexOf(tab)].classList.add('active');
+  const idx = ['zones','schedule','weather','settings'].indexOf(tab);
+  document.querySelectorAll('nav button')[idx].classList.add('active');
 }
 
-// ---- ZONES ----
+// ─── Render zones ─────────────────────────────────────────────────────────────
 function renderZones() {
   const grid = document.getElementById('zones-grid');
   grid.innerHTML = zones.map(z => {
-    const isRunning = !!runningTimers[z.id];
+    const run = runningStatus[String(z.id)];
+    const isRunning = !!run;
+    const pct = isRunning ? Math.round(((run.duration - run.remaining) / run.duration) * 100) : 0;
+    const m = isRunning ? Math.floor(run.remaining / 60).toString().padStart(2,'0') : '00';
+    const s = isRunning ? (run.remaining % 60).toString().padStart(2,'0') : '00';
+
     return `
     <div class="zone-card ${isRunning ? 'running' : ''}" id="zone-card-${z.id}">
-      <div class="running-bar ${isRunning ? 'active' : ''}"><div class="running-bar-fill"></div></div>
+      <div class="running-bar ${isRunning ? 'active' : ''}">
+        <div class="running-bar-fill" style="width:${pct}%"></div>
+      </div>
       <div class="zone-header">
         <div class="zone-name-wrap">
           <div class="zone-number">ZONE ${z.id}</div>
@@ -797,11 +598,13 @@ function renderZones() {
         <div class="meta-pill">📍 GPIO <span class="val">${z.gpio}</span></div>
         <div class="meta-pill">⏱ <span class="val">${z.duration}m</span></div>
       </div>
-      <div class="run-timer ${isRunning ? 'active' : ''}" id="timer-${z.id}">Running...</div>
+      <div class="run-timer ${isRunning ? 'active' : ''}" id="timer-${z.id}">
+        ${isRunning ? `Running · ${m}:${s} remaining` : ''}
+      </div>
       <div class="zone-actions">
         ${isRunning
           ? `<button class="btn btn-stop" onclick="stopZone(${z.id})">⏹ Stop</button>`
-          : `<button class="btn btn-run" onclick="runZone(${z.id})" ${!z.enabled ? 'disabled style="opacity:0.4"' : ''}>▶ Run Now</button>`
+          : `<button class="btn btn-run" onclick="runZone(${z.id})" ${!z.enabled ? 'disabled' : ''}>▶ Run Now</button>`
         }
         <button class="btn btn-edit" onclick="editZone(${z.id})">✏</button>
       </div>
@@ -809,59 +612,93 @@ function renderZones() {
   }).join('');
 }
 
-function toggleZone(id) {
+// ─── Zone control ─────────────────────────────────────────────────────────────
+async function toggleZone(id) {
   const z = zones.find(z => z.id === id);
-  z.enabled = !z.enabled;
-  saveZones();
-  renderZones();
+  try {
+    const updated = await api(`/zones/${id}`, 'PATCH', { enabled: !z.enabled });
+    z.enabled = updated.enabled;
+    renderZones();
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
-function runZone(id) {
-  const z = zones.find(z => z.id === id);
-  if (!z.enabled) return;
-  const totalSecs = z.duration * 60;
-  let elapsed = 0;
-  runningTimers[id] = setInterval(() => {
-    elapsed++;
-    const rem = totalSecs - elapsed;
-    const m = Math.floor(rem / 60).toString().padStart(2,'0');
-    const s = (rem % 60).toString().padStart(2,'0');
-    const el = document.getElementById('timer-' + id);
-    if (el) el.textContent = `Running · ${m}:${s} remaining`;
-    if (elapsed >= totalSecs) stopZone(id);
-  }, 1000);
-  renderZones();
-  showToast(`Zone ${id}: ${z.name} started`);
+async function runZone(id) {
+  try {
+    await api(`/zones/${id}/run`, 'POST', {});
+    showToast(`Zone ${id} started`);
+    await pollStatus(); // immediate update
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
-function stopZone(id) {
-  clearInterval(runningTimers[id]);
-  delete runningTimers[id];
-  renderZones();
-  showToast(`Zone ${id} stopped`);
+async function stopZone(id) {
+  try {
+    await api(`/zones/${id}/stop`, 'POST', {});
+    showToast(`Zone ${id} stopped`);
+    await pollStatus();
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
 function editZone(id) {
   const z = zones.find(z => z.id === id);
   const name = prompt("Zone name:", z.name);
-  if (name) { z.name = name; saveZones(); renderZones(); }
+  if (name && name.trim()) {
+    api(`/zones/${id}`, 'PATCH', { name: name.trim() })
+      .then(updated => { z.name = updated.name; renderZones(); renderSettings(); })
+      .catch(e => showToast('Error: ' + e.message, true));
+  }
 }
 
-function saveZones() {
-  localStorage.setItem('zones', JSON.stringify(zones));
+// ─── Status polling ───────────────────────────────────────────────────────────
+async function pollStatus() {
+  try {
+    const data = await api('/status');
+    runningStatus = data.running || {};
+    masterEnabled = data.master_enabled;
+
+    // Update master badge
+    const badge = document.getElementById('master-badge');
+    const label = document.getElementById('master-label');
+    if (masterEnabled) {
+      badge.classList.add('enabled');
+      label.textContent = 'ACTIVE';
+    } else {
+      badge.classList.remove('enabled');
+      label.textContent = 'DISABLED';
+    }
+
+    // Update toggle-master in settings
+    const tm = document.getElementById('toggle-master');
+    if (tm) tm.classList.toggle('on', masterEnabled);
+
+    // Update toggle-active-high
+    const tah = document.getElementById('toggle-active-high');
+    if (tah) tah.classList.toggle('on', data.active_high);
+
+    renderZones();
+  } catch(e) {
+    // Backend unreachable — mark offline
+    document.getElementById('master-badge').classList.remove('enabled');
+    document.getElementById('master-label').textContent = 'OFFLINE';
+  }
 }
 
-// ---- SCHEDULE ----
+// Poll every 3 seconds
+setInterval(pollStatus, 3000);
+
+// ─── Schedule ─────────────────────────────────────────────────────────────────
 function renderSchedule() {
   const list = document.getElementById('schedule-list');
-  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const allDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   list.innerHTML = schedules.map(s => `
     <div class="schedule-item">
       <div class="schedule-time">${s.time}</div>
       <div class="schedule-info">
-        <div style="font-size:0.85rem;font-weight:600;">${s.zones.length} zone${s.zones.length>1?'s':''} · ${s.zones.map(id => {const z=zones.find(z=>z.id===id); return z?z.name.split(' ')[0]:'?';}).join(', ')}</div>
+        <div style="font-size:0.85rem;font-weight:600;">
+          ${s.zones.length} zone${s.zones.length>1?'s':''} ·
+          ${s.zones.map(id => { const z = zones.find(z=>z.id===id); return z ? z.name.split(' ')[0] : '?'; }).join(', ')}
+        </div>
         <div class="schedule-days">
-          ${days.map(d => `<span class="day-chip ${s.days.includes(d)?'on':''}">${d}</span>`).join('')}
+          ${allDays.map(d => `<span class="day-chip ${s.days.includes(d)?'on':''}">${d}</span>`).join('')}
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
@@ -869,24 +706,33 @@ function renderSchedule() {
         <button class="btn btn-edit" onclick="deleteSchedule(${s.id})" style="color:var(--warn);">🗑</button>
       </div>
     </div>
-  `).join('');
+  `).join('') || '<p style="color:var(--muted);text-align:center;padding:24px;">No schedules yet.</p>';
 }
 
-function toggleSchedule(id) {
+async function toggleSchedule(id) {
   const s = schedules.find(s => s.id === id);
-  s.enabled = !s.enabled;
-  localStorage.setItem('schedules', JSON.stringify(schedules));
-  renderSchedule();
+  try {
+    const updated = await api(`/schedules/${id}`, 'PATCH', { enabled: !s.enabled });
+    s.enabled = updated.enabled;
+    renderSchedule();
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
-function deleteSchedule(id) {
+async function deleteSchedule(id) {
   if (!confirm('Delete this schedule?')) return;
-  schedules = schedules.filter(s => s.id !== id);
-  localStorage.setItem('schedules', JSON.stringify(schedules));
-  renderSchedule();
+  try {
+    await api(`/schedules/${id}`, 'DELETE');
+    schedules = schedules.filter(s => s.id !== id);
+    renderSchedule();
+    showToast('Schedule deleted');
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
 function openAddSchedule() {
+  editingScheduleId = null;
+  document.getElementById('modal-title').textContent = 'Add Schedule';
+  document.getElementById('sched-time').value = '06:00';
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.toggle('on', ['Mon','Tue','Wed','Thu','Fri'].includes(b.dataset.day)));
   const zc = document.getElementById('modal-zones');
   zc.innerHTML = zones.map(z => `
     <label class="zone-checkbox" id="zcheck-${z.id}">
@@ -905,25 +751,26 @@ function closeModal() {
   document.getElementById('schedule-modal').classList.remove('open');
 }
 
-function saveSchedule() {
+async function saveSchedule() {
   const time = document.getElementById('sched-time').value;
   const days = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
   const zoneIds = [...document.querySelectorAll('#modal-zones input:checked')].map(i => parseInt(i.value));
   if (!days.length) return alert('Select at least one day');
   if (!zoneIds.length) return alert('Select at least one zone');
-  const newId = schedules.length ? Math.max(...schedules.map(s=>s.id)) + 1 : 1;
-  schedules.push({ id: newId, time, days, zones: zoneIds, enabled: true });
-  localStorage.setItem('schedules', JSON.stringify(schedules));
-  renderSchedule();
-  closeModal();
-  showToast('Schedule added!');
+  try {
+    const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true });
+    schedules.push(newSched);
+    renderSchedule();
+    closeModal();
+    showToast('Schedule added!');
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
 document.querySelectorAll('.day-btn').forEach(btn => {
   btn.addEventListener('click', () => btn.classList.toggle('on'));
 });
 
-// ---- SETTINGS GPIO ----
+// ─── Settings GPIO ────────────────────────────────────────────────────────────
 function renderSettings() {
   const tbody = document.getElementById('gpio-tbody');
   tbody.innerHTML = zones.map(z => `
@@ -936,112 +783,134 @@ function renderSettings() {
   `).join('');
 }
 
-function saveSettings() {
-  zones.forEach(z => {
-    const nameEl = document.getElementById('name-'+z.id);
-    const gpioEl = document.getElementById('gpio-'+z.id);
-    const durEl  = document.getElementById('dur-'+z.id);
-    if (nameEl) z.name = nameEl.value;
-    if (gpioEl) z.gpio = parseInt(gpioEl.value);
-    if (durEl)  z.duration = parseInt(durEl.value);
-  });
-  saveZones();
-  renderZones();
-  showToast('Configuration saved!');
-}
-
-// ---- WEATHER ----
-function saveWeatherConfig() {
-  const key = document.getElementById('api-key').value;
-  const loc = document.getElementById('weather-location').value;
-  localStorage.setItem('wx-key', key);
-  localStorage.setItem('wx-loc', loc);
-  if (key && loc) { fetchWeather(key, loc); }
-  else showToast('Enter API key & location');
-}
-
-function saveSkipRules() {
-  showToast('Skip rules saved!');
-}
-
-async function fetchWeather(key, loc) {
+async function saveSettings() {
+  const updated = zones.map(z => ({
+    ...z,
+    name: document.getElementById('name-'+z.id)?.value || z.name,
+    gpio: parseInt(document.getElementById('gpio-'+z.id)?.value) || z.gpio,
+    duration: parseInt(document.getElementById('dur-'+z.id)?.value) || z.duration,
+  }));
   try {
-    const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(loc)}&appid=${key}&units=imperial`);
-    const data = await res.json();
-    if (data.cod !== 200) throw new Error(data.message);
-    const temp = Math.round(data.main.temp);
-    const desc = data.weather[0].description;
-    const hum  = data.main.humidity;
-    const wind = Math.round(data.wind.speed);
-    const icon = getWeatherIcon(data.weather[0].main);
-
-    document.getElementById('weather-icon-small').textContent = icon;
-    document.getElementById('header-temp').textContent = temp + '°F';
-    document.getElementById('header-desc').textContent = desc;
-    document.getElementById('weather-icon-big').textContent = icon;
-    document.getElementById('weather-temp-big').textContent = temp + '°F';
-    document.getElementById('weather-desc-big').textContent = `${desc} · Humidity ${hum}%`;
-
-    checkSkipRules(temp, hum, wind, data.weather[0].main);
-    showToast('Weather updated!');
-  } catch(e) {
-    showToast('Weather error: ' + e.message);
-  }
+    await api('/zones', 'POST', updated);
+    zones = updated;
+    renderZones();
+    showToast('Configuration saved!');
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
-function checkSkipRules(temp, hum, wind, main) {
-  const rainOn  = document.getElementById('toggle-rain').classList.contains('on');
-  const coldOn  = document.getElementById('toggle-cold').classList.contains('on');
-  const windOn  = document.getElementById('toggle-wind').classList.contains('on');
-  const rainPct = parseInt(document.getElementById('rain-threshold').value);
-  const coldThr = parseInt(document.getElementById('cold-threshold').value);
-  const windThr = parseInt(document.getElementById('wind-threshold').value);
+async function toggleMaster(el) {
+  const newVal = !el.classList.contains('on');
+  try {
+    await api('/system', 'POST', { master_enabled: newVal });
+    el.classList.toggle('on', newVal);
+    masterEnabled = newVal;
+    await pollStatus();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
 
-  const isRainy = ['Rain','Drizzle','Thunderstorm','Snow'].includes(main);
-  let skipReason = null;
-  if (rainOn && isRainy) skipReason = 'Rain expected — skipping watering';
-  if (coldOn && temp < coldThr) skipReason = `Temp ${temp}°F below ${coldThr}°F — skipping`;
-  if (windOn && wind > windThr) skipReason = `Wind ${wind}mph above ${windThr}mph — skipping`;
+async function toggleActiveHigh(el) {
+  const newVal = !el.classList.contains('on');
+  try {
+    await api('/system', 'POST', { active_high: newVal });
+    el.classList.toggle('on', newVal);
+    showToast('GPIO logic updated');
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
 
-  const indicator = document.getElementById('skip-indicator');
-  const precipEl  = document.getElementById('weather-precip');
-  if (skipReason) {
-    indicator.style.display = 'block';
-    precipEl.textContent = '⚠ ' + skipReason;
-    precipEl.style.color = 'var(--warn)';
-  } else {
-    indicator.style.display = 'none';
-    precipEl.textContent = 'Conditions OK — watering will proceed';
-    precipEl.style.color = 'var(--accent)';
-  }
+// ─── Weather ──────────────────────────────────────────────────────────────────
+async function saveWeatherConfig() {
+  const key = document.getElementById('api-key').value.trim();
+  const loc = document.getElementById('weather-location').value.trim();
+  if (!key || !loc) { showToast('Enter API key & location', true); return; }
+  try {
+    const res = await api('/weather', 'POST', { api_key: key, location: loc });
+    if (res.cached) updateWeatherUI(res.cached);
+    showToast('Weather connected!');
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+async function saveSkipRules() {
+  const body = {
+    skip_rain: document.getElementById('toggle-rain').classList.contains('on'),
+    rain_threshold: parseInt(document.getElementById('rain-threshold').value),
+    skip_cold: document.getElementById('toggle-cold').classList.contains('on'),
+    cold_threshold: parseInt(document.getElementById('cold-threshold').value),
+    skip_wind: document.getElementById('toggle-wind').classList.contains('on'),
+    wind_threshold: parseInt(document.getElementById('wind-threshold').value),
+  };
+  try {
+    await api('/weather', 'POST', body);
+    showToast('Skip rules saved!');
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+function updateWeatherUI(cached) {
+  if (!cached) return;
+  const icon = getWeatherIcon(cached.main);
+  document.getElementById('weather-icon-small').textContent = icon;
+  document.getElementById('header-temp').textContent = cached.temp + '°F';
+  document.getElementById('header-desc').textContent = cached.description;
+  document.getElementById('weather-icon-big').textContent = icon;
+  document.getElementById('weather-temp-big').textContent = cached.temp + '°F';
+  document.getElementById('weather-desc-big').textContent = `${cached.description} · Humidity ${cached.humidity}%`;
+  document.getElementById('weather-precip').textContent = cached.is_rainy ? '⚠ Rain detected' : 'No rain detected';
+  document.getElementById('weather-precip').style.color = cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
+}
+
+async function loadWeather() {
+  try {
+    const w = await api('/weather');
+    if (w.api_key) document.getElementById('api-key').value = w.api_key;
+    if (w.location) document.getElementById('weather-location').value = w.location;
+    if (w.skip_rain !== undefined) document.getElementById('toggle-rain').classList.toggle('on', w.skip_rain);
+    if (w.skip_cold !== undefined) document.getElementById('toggle-cold').classList.toggle('on', w.skip_cold);
+    if (w.skip_wind !== undefined) document.getElementById('toggle-wind').classList.toggle('on', w.skip_wind);
+    if (w.rain_threshold) document.getElementById('rain-threshold').value = w.rain_threshold;
+    if (w.cold_threshold) document.getElementById('cold-threshold').value = w.cold_threshold;
+    if (w.wind_threshold) document.getElementById('wind-threshold').value = w.wind_threshold;
+    if (w._cached) updateWeatherUI(w._cached);
+  } catch(e) { /* non-critical */ }
 }
 
 function getWeatherIcon(main) {
-  const icons = {Rain:'🌧', Drizzle:'🌦', Thunderstorm:'⛈', Snow:'🌨', Clear:'☀️', Clouds:'⛅', Mist:'🌫', Fog:'🌫'};
+  const icons = {Rain:'🌧',Drizzle:'🌦',Thunderstorm:'⛈',Snow:'🌨',Clear:'☀️',Clouds:'⛅',Mist:'🌫',Fog:'🌫'};
   return icons[main] || '🌤';
 }
 
 function toggleEl(el) { el.classList.toggle('on'); }
 
-// ---- TOAST ----
-function showToast(msg) {
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.classList.remove('error');
+  if (isError) t.classList.add('error');
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ---- INIT ----
-document.getElementById('api-key').value = localStorage.getItem('wx-key') || '';
-document.getElementById('weather-location').value = localStorage.getItem('wx-loc') || '';
+// ─── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    [zones, schedules] = await Promise.all([
+      api('/zones'),
+      api('/schedules'),
+    ]);
+    await pollStatus();
+    await loadWeather();
+    renderZones();
+    renderSchedule();
+    renderSettings();
+  } catch(e) {
+    showToast('Cannot reach backend', true);
+  } finally {
+    const overlay = document.getElementById('loading-overlay');
+    overlay.classList.add('hidden');
+    setTimeout(() => overlay.remove(), 500);
+  }
+}
 
-renderZones();
-renderSchedule();
-renderSettings();
-
-const savedKey = localStorage.getItem('wx-key');
-const savedLoc = localStorage.getItem('wx-loc');
-if (savedKey && savedLoc) fetchWeather(savedKey, savedLoc);
+init();
 </script>
 </body>
 </html>

@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/sprinkler
-ExecStart=/usr/bin/python3 /home/pi/sprinkler/app.py
+User=nbtccg
+WorkingDirectory=/home/nbtccg/sprinkler
+ExecStart=/home/nbtccg/sprinkler/venv/bin/python3 app.py
 Restart=on-failure
 RestartSec=5
 

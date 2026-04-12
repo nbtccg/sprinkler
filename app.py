@@ -16,6 +16,7 @@ import os
 import threading
 import time
 import logging
+import requests
 from datetime import datetime
 from pathlib import Path
 
@@ -26,29 +27,14 @@ from flask_cors import CORS
 # On a real Pi, use RPi.GPIO. On any other machine we fall back to a stub so
 # you can develop / test without hardware attached.
 try:
-    import RPi.GPIO as GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
+    import gpiod
+    chip = gpiod.Chip('gpiochip0')  # Pi 5 pinctrl-rp1
     ON_PI = True
-except (ImportError, RuntimeError):
+except (ImportError, Exception):
     ON_PI = False
-    logging.warning("RPi.GPIO not available – running in simulation mode.")
+    chip = None
+    logging.warning("gpiod not available – running in simulation mode.")
 
-    class _GPIO:
-        BCM = OUT = IN = HIGH = LOW = 0
-        @staticmethod
-        def setmode(_): pass
-        @staticmethod
-        def setwarnings(_): pass
-        @staticmethod
-        def setup(pin, mode): pass
-        @staticmethod
-        def output(pin, state):
-            logging.info(f"[SIM] GPIO {pin} → {'HIGH' if state else 'LOW'}")
-        @staticmethod
-        def cleanup(): pass
-
-    GPIO = _GPIO()
 
 # ── App & config ─────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder=".")
@@ -110,20 +96,31 @@ def save_data():
 state = load_data()
 
 # ── GPIO helpers ──────────────────────────────────────────────────────────────
-def _relay_on(pin):
-    GPIO.output(pin, GPIO.HIGH if state["active_high"] else GPIO.LOW)
 
-def _relay_off(pin):
-    GPIO.output(pin, GPIO.LOW if state["active_high"] else GPIO.HIGH)
+_lines = {}  # pin → gpiod.Line
 
 def init_gpio():
+    if chip is None:
+        return
     for zone in state["zones"]:
         pin = zone["gpio"]
-        GPIO.setup(pin, GPIO.OUT)
-        _relay_off(pin)           # ensure all relays start OFF
+        line = chip.get_line(pin)
+        line.request(consumer="sprinkler", type=gpiod.LINE_REQ_DIR_OUT, default_vals=[0])
+        _lines[pin] = line
         log.info(f"Zone {zone['id']} ({zone['name']}) → GPIO {pin} initialised")
 
-init_gpio()
+def _relay_on(pin):
+    if pin in _lines:
+        _lines[pin].set_value(1 if state["active_high"] else 0)
+    else:
+        logging.info(f"[SIM] GPIO {pin} → ON")
+
+def _relay_off(pin):
+    if pin in _lines:
+        _lines[pin].set_value(0 if state["active_high"] else 1)
+    else:
+        logging.info(f"[SIM] GPIO {pin} → OFF")
+
 
 # ── Zone run state ────────────────────────────────────────────────────────────
 running: dict[int, dict] = {}   # zone_id → {thread, stop_event, start, end}
@@ -240,7 +237,6 @@ log.info("Scheduler started")
 # ── Weather fetcher ───────────────────────────────────────────────────────────
 def fetch_weather_cache():
     """Fetch weather from OpenWeatherMap and cache result in state."""
-    import requests as req
     w = state.get("weather", {})
     key = w.get("api_key", "")
     loc = w.get("location", "")
@@ -251,7 +247,7 @@ def fetch_weather_cache():
             f"https://api.openweathermap.org/data/2.5/weather"
             f"?q={loc}&appid={key}&units=imperial"
         )
-        r = req.get(url, timeout=10)
+        r = requests.get(url, timeout=10)
         data = r.json()
         if data.get("cod") != 200:
             log.warning(f"Weather API error: {data.get('message')}")
@@ -442,7 +438,11 @@ import atexit
 def cleanup():
     stop_all()
     time.sleep(0.5)
-    GPIO.cleanup()
+    for line in _lines.values():
+        line.set_value(0)
+        line.release()
+    if chip is not None:
+        chip.close()
     log.info("GPIO cleaned up")
 
 # ── Entry point ────────────────────────────────────────────────────────────────
