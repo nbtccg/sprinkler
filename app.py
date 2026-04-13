@@ -161,8 +161,15 @@ def start_zone(zone_id: int, duration_secs=None) -> dict:
     secs = duration_secs or zone["duration"] * 60
 
     with run_lock:
-        if zone_id in running:
-            return {"error": "Zone already running"}
+        # Stop any currently running zones before starting the new one
+        for info in running.values():
+            info["stop_event"].set()
+        # Wait briefly for threads to shut down and relays to turn off
+        if running:
+            run_lock.release()
+            time.sleep(0.5)
+            run_lock.acquire()
+
         stop_event = threading.Event()
         t = threading.Thread(
             target=_run_zone_thread,
@@ -180,6 +187,7 @@ def start_zone(zone_id: int, duration_secs=None) -> dict:
         t.start()
 
     return {"ok": True, "zone_id": zone_id, "duration_secs": secs}
+
 
 def stop_zone(zone_id: int) -> dict:
     with run_lock:
