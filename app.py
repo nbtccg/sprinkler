@@ -87,6 +87,7 @@ def load_data():
         "active_high": True,
         "master_enabled": True,
         "last_skip": None,
+        "force_skip_next": False,
     }
 
 def save_data():
@@ -98,11 +99,10 @@ state = load_data()
 # Ensure keys added in later versions exist in older config files
 if "last_skip" not in state:
     state["last_skip"] = None
+if "force_skip_next" not in state:
+    state["force_skip_next"] = False
 
 # ── GPIO helpers (gpiod v2) ───────────────────────────────────────────────────
-# gpiod v2 uses request_lines() as a context manager per operation.
-# Lines do not need to be held open between calls.
-
 def _gpio_set(pin: int, value: bool):
     """Set a GPIO pin high or low using gpiod v2 API."""
     if not ON_PI:
@@ -135,6 +135,9 @@ init_gpio()
 # ── Zone run state ────────────────────────────────────────────────────────────
 running: dict = {}   # zone_id → {thread, stop_event, start, end, duration}
 run_lock = threading.Lock()
+
+# Tracks whether a "run all" sequence is in progress so the UI can reflect it
+run_all_active = threading.Event()
 
 def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Event):
     zone = next((z for z in state["zones"] if z["id"] == zone_id), None)
@@ -202,6 +205,49 @@ def stop_all():
         for info in running.values():
             info["stop_event"].set()
 
+# ── Run-all sequence ──────────────────────────────────────────────────────────
+def _run_all_thread():
+    """
+    Runs every enabled zone sequentially, each for its configured duration.
+    Bypasses weather skip (manual override). Respects master switch and
+    individual zone enabled flags.
+    """
+    run_all_active.set()
+    log.info("Run-all sequence started")
+    try:
+        for zone in state["zones"]:
+            # Re-check master each iteration in case it was disabled mid-run
+            if not state["master_enabled"]:
+                log.info("Run-all aborted: master switch disabled")
+                break
+            if not zone["enabled"]:
+                log.info(f"Run-all: skipping zone {zone['id']} ({zone['name']}) – disabled")
+                continue
+
+            secs = zone["duration"] * 60
+            result = start_zone(zone["id"], secs)
+            if "error" in result:
+                log.warning(f"Run-all: zone {zone['id']} skipped – {result['error']}")
+                continue
+
+            # Wait for this zone to finish (poll so stop_all can interrupt)
+            zone_id = zone["id"]
+            while True:
+                with run_lock:
+                    info = running.get(zone_id)
+                if info is None:
+                    break   # Zone finished naturally
+                if not state["master_enabled"]:
+                    stop_all()
+                    break
+                time.sleep(1)
+
+            # Brief gap between zones
+            time.sleep(2)
+    finally:
+        run_all_active.clear()
+        log.info("Run-all sequence complete")
+
 # ── Weather skip helpers ───────────────────────────────────────────────────────
 def _should_skip_weather() -> bool:
     w = state.get("weather", {})
@@ -242,6 +288,20 @@ def _scheduler_loop():
                         and sched["time"] == current_time
                         and current_day in sched["days"]):
                     log.info(f"Scheduler firing: schedule {sched['id']}")
+
+                    # Check force-skip flag first
+                    if state.get("force_skip_next"):
+                        reason = "Manually forced skip"
+                        log.info(f"Skipping due to force skip flag")
+                        state["force_skip_next"] = False
+                        state["last_skip"] = {
+                            "time": datetime.now().isoformat(),
+                            "schedule_id": sched["id"],
+                            "reason": reason,
+                        }
+                        save_data()
+                        continue
+
                     if _should_skip_weather():
                         reason = _skip_reason()
                         log.info(f"Skipping due to weather: {reason}")
@@ -252,6 +312,7 @@ def _scheduler_loop():
                         }
                         save_data()
                         continue
+
                     for zone_id in sched["zones"]:
                         start_zone(zone_id)
                         z = next((z for z in state["zones"] if z["id"] == zone_id), None)
@@ -357,6 +418,36 @@ def stop_all_route():
     stop_all()
     return jsonify({"ok": True})
 
+@app.route("/api/run_all", methods=["POST"])
+def run_all_route():
+    """
+    Start all enabled zones sequentially in a background thread.
+    Bypasses weather skip (manual override). Respects master switch and
+    per-zone enabled flags.
+    """
+    if not state["master_enabled"]:
+        return jsonify({"error": "Master switch is disabled"}), 400
+    if run_all_active.is_set():
+        return jsonify({"error": "Run-all sequence already in progress"}), 409
+    t = threading.Thread(target=_run_all_thread, daemon=True)
+    t.start()
+    return jsonify({"ok": True})
+
+@app.route("/api/force_skip", methods=["POST"])
+def force_skip_route():
+    """
+    Toggle the force-skip-next flag. When armed, the next scheduled run
+    will be skipped regardless of weather, then the flag clears automatically.
+    POST with {"cancel": true} to disarm without waiting for a run.
+    """
+    body = request.get_json(silent=True, force=True) or {}
+    if body.get("cancel"):
+        state["force_skip_next"] = False
+    else:
+        state["force_skip_next"] = not state.get("force_skip_next", False)
+    save_data()
+    return jsonify({"ok": True, "force_skip_next": state["force_skip_next"]})
+
 @app.route("/api/status", methods=["GET"])
 def status():
     now = time.time()
@@ -375,6 +466,8 @@ def status():
         "active_high": state["active_high"],
         "on_pi": ON_PI,
         "last_skip": state.get("last_skip"),
+        "force_skip_next": state.get("force_skip_next", False),
+        "run_all_active": run_all_active.is_set(),
     })
 
 @app.route("/api/schedules", methods=["GET"])
