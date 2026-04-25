@@ -106,6 +106,55 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
+  /* ---- ZONE TAB TOOLBAR ---- */
+  .zones-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .zones-toolbar-spacer { flex: 1; }
+
+  .btn-run-all {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white; border: none; border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-run-all:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-run-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-force-skip {
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-force-skip:hover { border-color: var(--warn); color: var(--warn); }
+  .btn-force-skip.armed {
+    background: rgba(255,107,53,0.12);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+  .btn-force-skip.armed:hover { background: rgba(255,107,53,0.2); }
+
+  /* Pulsing dot for run-all in progress */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .pulse-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: white; animation: pulse 1.2s ease-in-out infinite;
+  }
+
   /* ---- ZONES ---- */
   .zones-grid {
     display: grid;
@@ -337,6 +386,8 @@
     .gpio-table th:nth-child(3), .gpio-table td:nth-child(3) { display: none; }
     .header-right { gap: 6px; }
     .master-badge { display: none; }
+    .zones-toolbar { gap: 8px; }
+    .btn-run-all, .btn-force-skip { font-size: 0.78rem; padding: 9px 12px; }
   }
 </style>
 </head>
@@ -375,6 +426,19 @@
 
   <!-- ZONES TAB -->
   <div class="tab-content active" id="tab-zones">
+
+    <!-- Toolbar: Run All + Force Skip -->
+    <div class="zones-toolbar">
+      <button class="btn-run-all" id="btn-run-all" onclick="runAll()">
+        <span id="run-all-icon">▶▶</span>
+        <span id="run-all-label">Run All Zones</span>
+      </button>
+      <button class="btn-force-skip" id="btn-force-skip" onclick="toggleForceSkip()">
+        <span id="force-skip-icon">⏭</span>
+        <span id="force-skip-label">Skip Next Run</span>
+      </button>
+    </div>
+
     <div class="zones-grid" id="zones-grid"></div>
   </div>
 
@@ -540,7 +604,9 @@ let schedules = [];
 let runningStatus = {};
 let masterEnabled = true;
 let editingScheduleId = null;
-let lastSeenSkipTime = null;  // track which skip we've already shown
+let lastSeenSkipTime = localStorage.getItem('lastSeenSkipTime') || null;
+let forceSkipArmed = false;
+let runAllActive = false;
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 async function api(path, method = 'GET', body = null) {
@@ -603,6 +669,69 @@ function renderZones() {
   }).join('');
 }
 
+// ─── Toolbar button state ─────────────────────────────────────────────────────
+function updateToolbarButtons() {
+  const runAllBtn = document.getElementById('btn-run-all');
+  const runAllIcon = document.getElementById('run-all-icon');
+  const runAllLabel = document.getElementById('run-all-label');
+
+  const skipBtn = document.getElementById('btn-force-skip');
+  const skipIcon = document.getElementById('force-skip-icon');
+  const skipLabel = document.getElementById('force-skip-label');
+
+  // Run All button
+  if (runAllActive) {
+    runAllBtn.disabled = true;
+    runAllIcon.innerHTML = '<span class="pulse-dot"></span>';
+    runAllLabel.textContent = 'Sequence Running…';
+  } else {
+    runAllBtn.disabled = false;
+    runAllIcon.textContent = '▶▶';
+    runAllLabel.textContent = 'Run All Zones';
+  }
+
+  // Force Skip button
+  if (forceSkipArmed) {
+    skipBtn.classList.add('armed');
+    skipIcon.textContent = '⏭';
+    skipLabel.textContent = 'Skip Armed — Cancel?';
+  } else {
+    skipBtn.classList.remove('armed');
+    skipIcon.textContent = '⏭';
+    skipLabel.textContent = 'Skip Next Run';
+  }
+}
+
+// ─── Run All ──────────────────────────────────────────────────────────────────
+async function runAll() {
+  if (runAllActive) return;
+  try {
+    await api('/run_all', 'POST', {});
+    showToast('Running all enabled zones sequentially');
+    runAllActive = true;
+    updateToolbarButtons();
+    await pollStatus();
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
+// ─── Force Skip Next ──────────────────────────────────────────────────────────
+async function toggleForceSkip() {
+  try {
+    const res = await api('/force_skip', 'POST', {});
+    forceSkipArmed = res.force_skip_next;
+    updateToolbarButtons();
+    if (forceSkipArmed) {
+      showToast('Next scheduled run will be skipped');
+    } else {
+      showToast('Skip cancelled');
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message, true);
+  }
+}
+
 // ─── Zone control ─────────────────────────────────────────────────────────────
 async function toggleZone(id) {
   const z = zones.find(z => z.id === id);
@@ -646,6 +775,16 @@ async function pollStatus() {
     runningStatus = data.running || {};
     masterEnabled = data.master_enabled;
 
+    // Sync run-all and force-skip state from server
+    const prevRunAll = runAllActive;
+    runAllActive = data.run_all_active || false;
+    const prevForceSkip = forceSkipArmed;
+    forceSkipArmed = data.force_skip_next || false;
+
+    if (prevRunAll !== runAllActive || prevForceSkip !== forceSkipArmed) {
+      updateToolbarButtons();
+    }
+
     const badge = document.getElementById('master-badge');
     const label = document.getElementById('master-label');
     badge.classList.toggle('enabled', masterEnabled);
@@ -673,6 +812,7 @@ setInterval(pollStatus, 3000);
 // ─── Skip banner ──────────────────────────────────────────────────────────────
 function showSkipBanner(skip) {
   lastSeenSkipTime = skip.time;
+  localStorage.setItem('lastSeenSkipTime', skip.time);
   const when = new Date(skip.time).toLocaleString([], {
     month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit'
@@ -691,6 +831,7 @@ function showSkipBanner(skip) {
 
 function dismissSkipBanner() {
   document.getElementById('skip-banner').classList.remove('visible');
+  localStorage.setItem('lastSeenSkipTime', lastSeenSkipTime);
 }
 
 // ─── Schedule ─────────────────────────────────────────────────────────────────
@@ -863,7 +1004,6 @@ function updateWeatherUI(cached) {
   document.getElementById('weather-temp-big').textContent = cached.temp + '°F';
   document.getElementById('weather-desc-big').textContent =
     `${cached.description} · Humidity ${cached.humidity}%`;
-  // Only update precip text if there's no skip banner showing
   if (!document.getElementById('skip-banner').classList.contains('visible')) {
     document.getElementById('weather-precip').textContent =
       cached.is_rainy ? '⚠ Rain detected' : 'Conditions OK — watering will proceed';
@@ -916,6 +1056,7 @@ async function init() {
     renderZones();
     renderSchedule();
     renderSettings();
+    updateToolbarButtons();
   } catch(e) {
     showToast('Cannot reach backend', true);
   } finally {
