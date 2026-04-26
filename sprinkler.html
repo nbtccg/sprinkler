@@ -34,11 +34,8 @@
   header {
     padding: 20px 24px 16px;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0;
     background: rgba(10,22,40,0.95);
     backdrop-filter: blur(12px);
     z-index: 100;
@@ -59,10 +56,8 @@
 
   .master-badge {
     display: flex; align-items: center; gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 6px 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 12px;
     font-size: 0.75rem; font-weight: 700;
     color: var(--muted); letter-spacing: 0.05em;
   }
@@ -72,10 +67,8 @@
 
   .weather-badge {
     display: flex; align-items: center; gap: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 6px 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
     font-size: 0.8rem; color: var(--muted);
     cursor: pointer; transition: all 0.2s;
   }
@@ -106,20 +99,15 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* ---- ZONE TAB TOOLBAR ---- */
+  /* ---- ZONE TOOLBAR ---- */
   .zones-toolbar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: center;
+    display: flex; gap: 10px;
+    margin-bottom: 20px; flex-wrap: wrap; align-items: center;
   }
-  .zones-toolbar-spacer { flex: 1; }
 
   .btn-run-all {
     background: linear-gradient(135deg, var(--accent2), var(--accent));
-    color: white; border: none; border-radius: 12px;
-    padding: 10px 18px;
+    color: white; border: none; border-radius: 12px; padding: 10px 18px;
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
     cursor: pointer; display: flex; align-items: center; gap: 8px;
     transition: all 0.2s;
@@ -127,33 +115,29 @@
   .btn-run-all:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-run-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
+  .btn-stop-all {
+    background: rgba(255,107,53,0.12);
+    color: var(--warn); border: 1px solid rgba(255,107,53,0.35);
+    border-radius: 12px; padding: 10px 18px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .btn-stop-all:hover { background: rgba(255,107,53,0.22); transform: translateY(-1px); }
+
   .btn-force-skip {
-    background: var(--surface);
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 18px;
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 18px;
     font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
     cursor: pointer; display: flex; align-items: center; gap: 8px;
     transition: all 0.2s;
   }
   .btn-force-skip:hover { border-color: var(--warn); color: var(--warn); }
-  .btn-force-skip.armed {
-    background: rgba(255,107,53,0.12);
-    border-color: var(--warn);
-    color: var(--warn);
-  }
+  .btn-force-skip.armed { background: rgba(255,107,53,0.12); border-color: var(--warn); color: var(--warn); }
   .btn-force-skip.armed:hover { background: rgba(255,107,53,0.2); }
 
-  /* Pulsing dot for run-all in progress */
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  .pulse-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: white; animation: pulse 1.2s ease-in-out infinite;
-  }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .pulse-dot { width:8px; height:8px; border-radius:50%; background:white; animation:pulse 1.2s ease-in-out infinite; }
 
   /* ---- ZONES ---- */
   .zones-grid {
@@ -286,28 +270,90 @@
     font-size: 0.8rem; font-weight: 700; text-align: center;
   }
 
-  /* ---- SKIP HISTORY BANNER ---- */
+  /* ---- SKIP BANNER ---- */
   .skip-banner {
     display: none;
-    background: rgba(255,107,53,0.08);
-    border: 1px solid rgba(255,107,53,0.3);
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 16px;
-    align-items: center;
-    gap: 14px;
+    background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;
+    align-items: center; gap: 14px;
   }
   .skip-banner.visible { display: flex; }
   .skip-banner-icon { font-size: 1.4rem; flex-shrink: 0; }
   .skip-banner-text { flex: 1; }
   .skip-banner-title { font-size: 0.85rem; font-weight: 700; color: var(--warn); }
   .skip-banner-detail { font-size: 0.78rem; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
-  .skip-banner-dismiss {
-    background: none; border: none; color: var(--muted);
-    cursor: pointer; font-size: 1rem; padding: 4px;
-    transition: color 0.2s;
-  }
+  .skip-banner-dismiss { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 4px; transition: color 0.2s; }
   .skip-banner-dismiss:hover { color: var(--text); }
+
+  /* ---- HISTORY TAB ---- */
+  .history-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .filter-chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px;
+    font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .filter-chip:hover { border-color: var(--accent2); color: var(--text); }
+  .filter-chip.active { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+  .history-clear-btn {
+    margin-left: auto;
+    background: none; border: 1px solid var(--border);
+    border-radius: 10px; padding: 6px 12px;
+    font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700;
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .history-clear-btn:hover { border-color: var(--warn); color: var(--warn); }
+
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .event-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    transition: border-color 0.2s;
+  }
+  .event-row:hover { border-color: var(--surface2); }
+  .event-row.outcome-ran   { border-left: 3px solid var(--accent); }
+  .event-row.outcome-skipped { border-left: 3px solid var(--warn); }
+  .event-row.outcome-stopped { border-left: 3px solid #ff3860; }
+
+  .event-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .outcome-ran    .event-dot { background: var(--accent); box-shadow: 0 0 6px rgba(0,200,150,0.5); }
+  .outcome-skipped .event-dot { background: var(--warn); box-shadow: 0 0 6px rgba(255,107,53,0.4); }
+  .outcome-stopped .event-dot { background: #ff3860; box-shadow: 0 0 6px rgba(255,56,96,0.4); }
+
+  .event-main { flex: 1; min-width: 0; }
+  .event-zone { font-size: 0.9rem; font-weight: 700; }
+  .event-meta { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; align-items: center; }
+  .event-time { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); }
+  .event-reason { font-size: 0.72rem; color: var(--warn); font-family: 'DM Mono', monospace; }
+
+  .event-badge {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .badge-scheduled { background: rgba(0,132,255,0.15); color: var(--accent2); }
+  .badge-manual    { background: rgba(0,200,150,0.12); color: var(--accent); }
+  .badge-run_all   { background: rgba(0,200,150,0.12); color: var(--accent); }
+
+  .event-duration {
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    color: var(--text); text-align: right; flex-shrink: 0; min-width: 52px;
+  }
+  .event-duration.skipped { color: var(--muted); font-style: italic; }
+
+  .history-empty {
+    text-align: center; padding: 48px 24px;
+    color: var(--muted); font-size: 0.9rem;
+  }
+  .history-empty .icon { font-size: 2.5rem; margin-bottom: 12px; }
 
   /* ---- SETTINGS ---- */
   .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 16px; }
@@ -387,7 +433,7 @@
     .header-right { gap: 6px; }
     .master-badge { display: none; }
     .zones-toolbar { gap: 8px; }
-    .btn-run-all, .btn-force-skip { font-size: 0.78rem; padding: 9px 12px; }
+    .btn-run-all, .btn-stop-all, .btn-force-skip { font-size: 0.78rem; padding: 9px 12px; }
   }
 </style>
 </head>
@@ -419,6 +465,7 @@
   <button class="active" onclick="switchTab('zones')">Zones</button>
   <button onclick="switchTab('schedule')">Schedule</button>
   <button onclick="switchTab('weather')">Weather</button>
+  <button onclick="switchTab('history')">History</button>
   <button onclick="switchTab('settings')">Settings</button>
 </nav>
 
@@ -426,19 +473,19 @@
 
   <!-- ZONES TAB -->
   <div class="tab-content active" id="tab-zones">
-
-    <!-- Toolbar: Run All + Force Skip -->
     <div class="zones-toolbar">
       <button class="btn-run-all" id="btn-run-all" onclick="runAll()">
         <span id="run-all-icon">▶▶</span>
         <span id="run-all-label">Run All Zones</span>
+      </button>
+      <button class="btn-stop-all" onclick="stopAll()">
+        ⏹ Stop All
       </button>
       <button class="btn-force-skip" id="btn-force-skip" onclick="toggleForceSkip()">
         <span id="force-skip-icon">⏭</span>
         <span id="force-skip-label">Skip Next Run</span>
       </button>
     </div>
-
     <div class="zones-grid" id="zones-grid"></div>
   </div>
 
@@ -450,8 +497,6 @@
 
   <!-- WEATHER TAB -->
   <div class="tab-content" id="tab-weather">
-
-    <!-- Skip banner – shown when a schedule was skipped -->
     <div class="skip-banner" id="skip-banner">
       <div class="skip-banner-icon">⛔</div>
       <div class="skip-banner-text">
@@ -466,7 +511,7 @@
       <div class="weather-details">
         <h2 id="weather-temp-big">--°F</h2>
         <p id="weather-desc-big">No weather data yet</p>
-        <p id="weather-precip" style="color: var(--accent2); margin-top:4px; font-size:0.8rem;"></p>
+        <p id="weather-precip" style="color:var(--accent2);margin-top:4px;font-size:0.8rem;"></p>
       </div>
       <div class="skip-active" id="skip-indicator" style="display:none;">⚠️ Skip<br>Active</div>
     </div>
@@ -488,10 +533,7 @@
       <h3>Auto-Skip Rules</h3>
       <div class="skip-rules">
         <div class="skip-rule">
-          <div class="skip-rule-label">
-            Skip if rain forecast
-            <span>Active weather conditions</span>
-          </div>
+          <div class="skip-rule-label">Skip if rain forecast <span>Active weather conditions</span></div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="rain-threshold" value="40" min="0" max="100">
             <span style="font-size:0.8rem;color:var(--muted);">%</span>
@@ -499,10 +541,7 @@
           </div>
         </div>
         <div class="skip-rule">
-          <div class="skip-rule-label">
-            Skip if temp below
-            <span>Too cold for watering</span>
-          </div>
+          <div class="skip-rule-label">Skip if temp below <span>Too cold for watering</span></div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="cold-threshold" value="35" min="0" max="60">
             <span style="font-size:0.8rem;color:var(--muted);">°F</span>
@@ -510,10 +549,7 @@
           </div>
         </div>
         <div class="skip-rule">
-          <div class="skip-rule-label">
-            Skip if wind speed above
-            <span>High winds reduce efficiency</span>
-          </div>
+          <div class="skip-rule-label">Skip if wind speed above <span>High winds reduce efficiency</span></div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="wind-threshold" value="20" min="0" max="60">
             <span style="font-size:0.8rem;color:var(--muted);">mph</span>
@@ -522,6 +558,20 @@
         </div>
       </div>
       <button class="save-btn" onclick="saveSkipRules()">Save Rules</button>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-content" id="tab-history">
+    <div class="history-toolbar">
+      <button class="filter-chip active" data-filter="all"    onclick="setFilter('all')">All</button>
+      <button class="filter-chip"        data-filter="ran"     onclick="setFilter('ran')">Ran</button>
+      <button class="filter-chip"        data-filter="skipped" onclick="setFilter('skipped')">Skipped</button>
+      <button class="filter-chip"        data-filter="stopped" onclick="setFilter('stopped')">Stopped</button>
+      <button class="history-clear-btn" onclick="clearHistory()">Clear History</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <div class="history-empty"><div class="icon">📋</div>No events yet</div>
     </div>
   </div>
 
@@ -546,17 +596,11 @@
     <div class="settings-section">
       <h3>System</h3>
       <div class="skip-rule" style="margin-bottom:10px;">
-        <div class="skip-rule-label">
-          Master enable
-          <span>Disable all watering globally</span>
-        </div>
+        <div class="skip-rule-label">Master enable <span>Disable all watering globally</span></div>
         <div class="toggle on" id="toggle-master" onclick="toggleMaster(this)"></div>
       </div>
       <div class="skip-rule">
-        <div class="skip-rule-label">
-          GPIO active high
-          <span>Relay trigger logic (HIGH = on)</span>
-        </div>
+        <div class="skip-rule-label">GPIO active high <span>Relay trigger logic (HIGH = on)</span></div>
         <div class="toggle on" id="toggle-active-high" onclick="toggleActiveHigh(this)"></div>
       </div>
     </div>
@@ -598,15 +642,17 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let zones = [];
-let schedules = [];
-let runningStatus = {};
-let masterEnabled = true;
+// ─── State ────────────────────────────────────────────────────────────────────
+let zones          = [];
+let schedules      = [];
+let runningStatus  = {};
+let masterEnabled  = true;
 let editingScheduleId = null;
-let lastSeenSkipTime = localStorage.getItem('lastSeenSkipTime') || null;
+let lastSeenSkipTime  = localStorage.getItem('lastSeenSkipTime') || null;
 let forceSkipArmed = false;
-let runAllActive = false;
+let runAllActive   = false;
+let historyFilter  = 'all';
+let allEvents      = [];
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 async function api(path, method = 'GET', body = null) {
@@ -625,8 +671,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  const idx = ['zones','schedule','weather','settings'].indexOf(tab);
+  const idx = ['zones','schedule','weather','history','settings'].indexOf(tab);
   document.querySelectorAll('nav button')[idx].classList.add('active');
+  if (tab === 'history') loadHistory();
 }
 
 // ─── Render zones ─────────────────────────────────────────────────────────────
@@ -636,8 +683,8 @@ function renderZones() {
     const run = runningStatus[String(z.id)];
     const isRunning = !!run;
     const pct = isRunning ? Math.round(((run.duration - run.remaining) / run.duration) * 100) : 0;
-    const m = isRunning ? Math.floor(run.remaining / 60).toString().padStart(2,'0') : '00';
-    const s = isRunning ? (run.remaining % 60).toString().padStart(2,'0') : '00';
+    const m   = isRunning ? Math.floor(run.remaining / 60).toString().padStart(2,'0') : '00';
+    const s   = isRunning ? (run.remaining % 60).toString().padStart(2,'0') : '00';
 
     return `
     <div class="zone-card ${isRunning ? 'running' : ''}" id="zone-card-${z.id}">
@@ -669,17 +716,14 @@ function renderZones() {
   }).join('');
 }
 
-// ─── Toolbar button state ─────────────────────────────────────────────────────
+// ─── Toolbar buttons ──────────────────────────────────────────────────────────
 function updateToolbarButtons() {
-  const runAllBtn = document.getElementById('btn-run-all');
-  const runAllIcon = document.getElementById('run-all-icon');
+  const runAllBtn   = document.getElementById('btn-run-all');
+  const runAllIcon  = document.getElementById('run-all-icon');
   const runAllLabel = document.getElementById('run-all-label');
+  const skipBtn     = document.getElementById('btn-force-skip');
+  const skipLabel   = document.getElementById('force-skip-label');
 
-  const skipBtn = document.getElementById('btn-force-skip');
-  const skipIcon = document.getElementById('force-skip-icon');
-  const skipLabel = document.getElementById('force-skip-label');
-
-  // Run All button
   if (runAllActive) {
     runAllBtn.disabled = true;
     runAllIcon.innerHTML = '<span class="pulse-dot"></span>';
@@ -690,19 +734,16 @@ function updateToolbarButtons() {
     runAllLabel.textContent = 'Run All Zones';
   }
 
-  // Force Skip button
   if (forceSkipArmed) {
     skipBtn.classList.add('armed');
-    skipIcon.textContent = '⏭';
     skipLabel.textContent = 'Skip Armed — Cancel?';
   } else {
     skipBtn.classList.remove('armed');
-    skipIcon.textContent = '⏭';
     skipLabel.textContent = 'Skip Next Run';
   }
 }
 
-// ─── Run All ──────────────────────────────────────────────────────────────────
+// ─── Run All / Stop All ───────────────────────────────────────────────────────
 async function runAll() {
   if (runAllActive) return;
   try {
@@ -711,25 +752,27 @@ async function runAll() {
     runAllActive = true;
     updateToolbarButtons();
     await pollStatus();
-  } catch(e) {
-    showToast('Error: ' + e.message, true);
-  }
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
-// ─── Force Skip Next ──────────────────────────────────────────────────────────
+async function stopAll() {
+  try {
+    await api('/stop_all', 'POST', {});
+    showToast('All zones stopped');
+    runAllActive = false;
+    updateToolbarButtons();
+    await pollStatus();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+// ─── Force Skip ───────────────────────────────────────────────────────────────
 async function toggleForceSkip() {
   try {
     const res = await api('/force_skip', 'POST', {});
     forceSkipArmed = res.force_skip_next;
     updateToolbarButtons();
-    if (forceSkipArmed) {
-      showToast('Next scheduled run will be skipped');
-    } else {
-      showToast('Skip cancelled');
-    }
-  } catch(e) {
-    showToast('Error: ' + e.message, true);
-  }
+    showToast(forceSkipArmed ? 'Next scheduled run will be skipped' : 'Skip cancelled');
+  } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
 // ─── Zone control ─────────────────────────────────────────────────────────────
@@ -775,13 +818,12 @@ async function pollStatus() {
     runningStatus = data.running || {};
     masterEnabled = data.master_enabled;
 
-    // Sync run-all and force-skip state from server
-    const prevRunAll = runAllActive;
-    runAllActive = data.run_all_active || false;
-    const prevForceSkip = forceSkipArmed;
-    forceSkipArmed = data.force_skip_next || false;
+    const prevRunAll   = runAllActive;
+    const prevSkip     = forceSkipArmed;
+    runAllActive   = data.run_all_active   || false;
+    forceSkipArmed = data.force_skip_next  || false;
 
-    if (prevRunAll !== runAllActive || prevForceSkip !== forceSkipArmed) {
+    if (prevRunAll !== runAllActive || prevSkip !== forceSkipArmed) {
       updateToolbarButtons();
     }
 
@@ -790,12 +832,11 @@ async function pollStatus() {
     badge.classList.toggle('enabled', masterEnabled);
     label.textContent = masterEnabled ? 'ACTIVE' : 'DISABLED';
 
-    const tm = document.getElementById('toggle-master');
-    if (tm) tm.classList.toggle('on', masterEnabled);
+    const tm  = document.getElementById('toggle-master');
+    if (tm)  tm.classList.toggle('on', masterEnabled);
     const tah = document.getElementById('toggle-active-high');
     if (tah) tah.classList.toggle('on', data.active_high);
 
-    // Show skip banner if there's a new skip we haven't shown yet
     if (data.last_skip && data.last_skip.time !== lastSeenSkipTime) {
       showSkipBanner(data.last_skip);
     }
@@ -813,17 +854,10 @@ setInterval(pollStatus, 3000);
 function showSkipBanner(skip) {
   lastSeenSkipTime = skip.time;
   localStorage.setItem('lastSeenSkipTime', skip.time);
-  const when = new Date(skip.time).toLocaleString([], {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-  document.getElementById('skip-banner-title').textContent =
-    `Schedule ${skip.schedule_id} was skipped`;
-  document.getElementById('skip-banner-detail').textContent =
-    `${skip.reason} · ${when}`;
+  const when = new Date(skip.time).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('skip-banner-title').textContent  = `Schedule ${skip.schedule_id} was skipped`;
+  document.getElementById('skip-banner-detail').textContent = `${skip.reason} · ${when}`;
   document.getElementById('skip-banner').classList.add('visible');
-
-  // Also update the weather tab indicator
   document.getElementById('skip-indicator').style.display = 'block';
   document.getElementById('weather-precip').textContent = `⚠ Last skip: ${skip.reason} · ${when}`;
   document.getElementById('weather-precip').style.color = 'var(--warn)';
@@ -834,9 +868,91 @@ function dismissSkipBanner() {
   localStorage.setItem('lastSeenSkipTime', lastSeenSkipTime);
 }
 
+// ─── History ──────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  try {
+    allEvents = await api('/events');
+    renderHistory();
+  } catch(e) { showToast('Could not load history', true); }
+}
+
+function setFilter(f) {
+  historyFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.filter === f);
+  });
+  renderHistory();
+}
+
+function fmtDuration(secs) {
+  if (secs == null) return '—';
+  if (secs < 60)   return `${secs}s`;
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
+function fmtTimestamp(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const isToday = d.toDateString() === today.toDateString();
+  if (isToday) {
+    return 'Today ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  }
+  return d.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function triggerLabel(t) {
+  if (t === 'scheduled') return 'SCHEDULED';
+  if (t === 'run_all')   return 'RUN ALL';
+  return 'MANUAL';
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const filtered = historyFilter === 'all'
+    ? allEvents
+    : allEvents.filter(e => e.outcome === historyFilter);
+
+  if (!filtered.length) {
+    const msg = historyFilter === 'all' ? 'No events yet' : `No ${historyFilter} events`;
+    list.innerHTML = `<div class="history-empty"><div class="icon">📋</div>${msg}</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(e => {
+    const isSkipped = e.outcome === 'skipped';
+    const durText   = isSkipped ? '—' : fmtDuration(e.duration_secs);
+
+    return `
+    <div class="event-row outcome-${e.outcome}">
+      <div class="event-dot"></div>
+      <div class="event-main">
+        <div class="event-zone">${e.zone_name || `Zone ${e.zone_id}`}</div>
+        <div class="event-meta">
+          <span class="event-time">${fmtTimestamp(e.timestamp)}</span>
+          <span class="event-badge badge-${e.trigger}">${triggerLabel(e.trigger)}</span>
+          ${e.reason ? `<span class="event-reason">${e.reason}</span>` : ''}
+        </div>
+      </div>
+      <div class="event-duration ${isSkipped ? 'skipped' : ''}">${durText}</div>
+    </div>`;
+  }).join('');
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all event history?')) return;
+  try {
+    await api('/events', 'DELETE');
+    allEvents = [];
+    renderHistory();
+    showToast('History cleared');
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
 // ─── Schedule ─────────────────────────────────────────────────────────────────
 function renderSchedule() {
-  const list = document.getElementById('schedule-list');
+  const list    = document.getElementById('schedule-list');
   const allDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   list.innerHTML = schedules.map(s => `
     <div class="schedule-item">
@@ -897,15 +1013,13 @@ function updateZoneCheck(id) {
   document.getElementById('zcheck-'+id).classList.toggle('checked', cb.checked);
 }
 
-function closeModal() {
-  document.getElementById('schedule-modal').classList.remove('open');
-}
+function closeModal() { document.getElementById('schedule-modal').classList.remove('open'); }
 
 async function saveSchedule() {
-  const time = document.getElementById('sched-time').value;
-  const days = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
+  const time    = document.getElementById('sched-time').value;
+  const days    = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
   const zoneIds = [...document.querySelectorAll('#modal-zones input:checked')].map(i => parseInt(i.value));
-  if (!days.length) return alert('Select at least one day');
+  if (!days.length)    return alert('Select at least one day');
   if (!zoneIds.length) return alert('Select at least one zone');
   try {
     const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true });
@@ -922,8 +1036,7 @@ document.querySelectorAll('.day-btn').forEach(btn => {
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function renderSettings() {
-  const tbody = document.getElementById('gpio-tbody');
-  tbody.innerHTML = zones.map(z => `
+  document.getElementById('gpio-tbody').innerHTML = zones.map(z => `
     <tr>
       <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:0.8rem;">Z${z.id}</td>
       <td><input class="name-input" type="text" value="${z.name}" id="name-${z.id}" /></td>
@@ -936,9 +1049,9 @@ function renderSettings() {
 async function saveSettings() {
   const updated = zones.map(z => ({
     ...z,
-    name: document.getElementById('name-'+z.id)?.value || z.name,
-    gpio: parseInt(document.getElementById('gpio-'+z.id)?.value) || z.gpio,
-    duration: parseInt(document.getElementById('dur-'+z.id)?.value) || z.duration,
+    name:     document.getElementById('name-'+z.id)?.value  || z.name,
+    gpio:     parseInt(document.getElementById('gpio-'+z.id)?.value)  || z.gpio,
+    duration: parseInt(document.getElementById('dur-'+z.id)?.value)   || z.duration,
   }));
   try {
     await api('/zones', 'POST', updated);
@@ -981,11 +1094,11 @@ async function saveWeatherConfig() {
 
 async function saveSkipRules() {
   const body = {
-    skip_rain: document.getElementById('toggle-rain').classList.contains('on'),
+    skip_rain:      document.getElementById('toggle-rain').classList.contains('on'),
     rain_threshold: parseInt(document.getElementById('rain-threshold').value),
-    skip_cold: document.getElementById('toggle-cold').classList.contains('on'),
+    skip_cold:      document.getElementById('toggle-cold').classList.contains('on'),
     cold_threshold: parseInt(document.getElementById('cold-threshold').value),
-    skip_wind: document.getElementById('toggle-wind').classList.contains('on'),
+    skip_wind:      document.getElementById('toggle-wind').classList.contains('on'),
     wind_threshold: parseInt(document.getElementById('wind-threshold').value),
   };
   try {
@@ -998,32 +1111,29 @@ function updateWeatherUI(cached) {
   if (!cached) return;
   const icon = getWeatherIcon(cached.main);
   document.getElementById('weather-icon-small').textContent = icon;
-  document.getElementById('header-temp').textContent = cached.temp + '°F';
-  document.getElementById('header-desc').textContent = cached.description;
-  document.getElementById('weather-icon-big').textContent = icon;
-  document.getElementById('weather-temp-big').textContent = cached.temp + '°F';
-  document.getElementById('weather-desc-big').textContent =
-    `${cached.description} · Humidity ${cached.humidity}%`;
+  document.getElementById('header-temp').textContent        = cached.temp + '°F';
+  document.getElementById('header-desc').textContent        = cached.description;
+  document.getElementById('weather-icon-big').textContent   = icon;
+  document.getElementById('weather-temp-big').textContent   = cached.temp + '°F';
+  document.getElementById('weather-desc-big').textContent   = `${cached.description} · Humidity ${cached.humidity}%`;
   if (!document.getElementById('skip-banner').classList.contains('visible')) {
-    document.getElementById('weather-precip').textContent =
-      cached.is_rainy ? '⚠ Rain detected' : 'Conditions OK — watering will proceed';
-    document.getElementById('weather-precip').style.color =
-      cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
+    document.getElementById('weather-precip').textContent = cached.is_rainy ? '⚠ Rain detected' : 'Conditions OK — watering will proceed';
+    document.getElementById('weather-precip').style.color = cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
   }
 }
 
 async function loadWeather() {
   try {
     const w = await api('/weather');
-    if (w.api_key) document.getElementById('api-key').value = w.api_key;
-    if (w.location) document.getElementById('weather-location').value = w.location;
-    if (w.skip_rain !== undefined) document.getElementById('toggle-rain').classList.toggle('on', w.skip_rain);
-    if (w.skip_cold !== undefined) document.getElementById('toggle-cold').classList.toggle('on', w.skip_cold);
-    if (w.skip_wind !== undefined) document.getElementById('toggle-wind').classList.toggle('on', w.skip_wind);
-    if (w.rain_threshold) document.getElementById('rain-threshold').value = w.rain_threshold;
-    if (w.cold_threshold) document.getElementById('cold-threshold').value = w.cold_threshold;
-    if (w.wind_threshold) document.getElementById('wind-threshold').value = w.wind_threshold;
-    if (w._cached) updateWeatherUI(w._cached);
+    if (w.api_key)           document.getElementById('api-key').value            = w.api_key;
+    if (w.location)          document.getElementById('weather-location').value   = w.location;
+    if (w.skip_rain  != null) document.getElementById('toggle-rain').classList.toggle('on', w.skip_rain);
+    if (w.skip_cold  != null) document.getElementById('toggle-cold').classList.toggle('on', w.skip_cold);
+    if (w.skip_wind  != null) document.getElementById('toggle-wind').classList.toggle('on', w.skip_wind);
+    if (w.rain_threshold)    document.getElementById('rain-threshold').value    = w.rain_threshold;
+    if (w.cold_threshold)    document.getElementById('cold-threshold').value    = w.cold_threshold;
+    if (w.wind_threshold)    document.getElementById('wind-threshold').value    = w.wind_threshold;
+    if (w._cached)           updateWeatherUI(w._cached);
   } catch(e) { /* non-critical */ }
 }
 
@@ -1044,13 +1154,10 @@ function showToast(msg, isError = false) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ─── Init ──────────────────────────────────────────────────────────────────────
+// ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   try {
-    [zones, schedules] = await Promise.all([
-      api('/zones'),
-      api('/schedules'),
-    ]);
+    [zones, schedules] = await Promise.all([api('/zones'), api('/schedules')]);
     await pollStatus();
     await loadWeather();
     renderZones();
