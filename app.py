@@ -592,6 +592,20 @@ def patch_schedule(sched_id):
     save_data()
     return jsonify(sched)
 
+@app.route("/api/schedules/<int:sched_id>", methods=["PUT"])
+def replace_schedule(sched_id):
+    """Fully replace a schedule's time, days, zones, and enabled state."""
+    sched = next((s for s in state["schedules"] if s["id"] == sched_id), None)
+    if not sched:
+        return jsonify({"error": "Not found"}), 404
+    body = request.json or {}
+    sched["time"]    = body.get("time",    sched["time"])
+    sched["days"]    = body.get("days",    sched["days"])
+    sched["zones"]   = body.get("zones",   sched["zones"])
+    sched["enabled"] = body.get("enabled", sched["enabled"])
+    save_data()
+    return jsonify(sched)
+
 @app.route("/api/schedules/<int:sched_id>", methods=["DELETE"])
 def delete_schedule(sched_id):
     before = len(state["schedules"])
