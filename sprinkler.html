@@ -426,6 +426,113 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* ---- HISTORY GRID ---- */
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; color: var(--muted);
+  }
+  .legend-swatch {
+    width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0;
+  }
+
+  .hgrid {
+    display: grid;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+    min-width: 560px;
+  }
+
+  .hgrid-header-row {
+    display: contents;
+  }
+  .hgrid-zone-label {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--text);
+    white-space: nowrap;
+    position: sticky; left: 0; z-index: 2;
+  }
+  .hgrid-zone-label.header {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .hgrid-day-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid rgba(30,58,110,0.4);
+    padding: 8px 4px;
+    text-align: center;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.3;
+  }
+  .hgrid-day-header.today {
+    color: var(--accent);
+    background: rgba(0,200,150,0.06);
+  }
+  .hgrid-day-header .dow  { font-weight: 700; font-size: 0.7rem; letter-spacing: 0.04em; }
+  .hgrid-day-header .dom  { font-size: 0.78rem; }
+
+  .hgrid-cell {
+    border-right: 1px solid rgba(30,58,110,0.3);
+    border-bottom: 1px solid rgba(30,58,110,0.3);
+    padding: 4px;
+    min-height: 48px;
+    background: var(--surface2);
+    position: relative;
+    cursor: default;
+    transition: filter 0.15s;
+  }
+  .hgrid-cell:hover { filter: brightness(1.25); }
+  .hgrid-cell.empty { background: var(--surface); }
+
+  .hgrid-pill {
+    border-radius: 5px;
+    padding: 3px 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    margin: 2px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .pill-ran     { color: #002a1e; }
+  .pill-skipped { background: rgba(255,107,53,0.22); color: var(--warn); border: 1px solid rgba(255,107,53,0.35); }
+  .pill-stopped { background: rgba(255,56,96,0.18); color: #ff3860; border: 1px solid rgba(255,56,96,0.3); }
+
+  #grid-tooltip {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 9000;
+    display: none;
+    max-width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    line-height: 1.6;
+  }
+  #grid-tooltip .tt-zone  { font-weight: 700; margin-bottom: 4px; }
+  #grid-tooltip .tt-row   { color: var(--muted); font-family: 'DM Mono', monospace; font-size: 0.72rem; }
+  #grid-tooltip .tt-ran   { color: var(--accent); }
+  #grid-tooltip .tt-skip  { color: var(--warn); }
+  #grid-tooltip .tt-stop  { color: #ff3860; }
+
   @media (max-width: 480px) {
     header { flex-wrap: wrap; gap: 10px; }
     .zones-grid { grid-template-columns: 1fr; }
@@ -564,15 +671,41 @@
   <!-- HISTORY TAB -->
   <div class="tab-content" id="tab-history">
     <div class="history-toolbar">
-      <button class="filter-chip active" data-filter="all"    onclick="setFilter('all')">All</button>
-      <button class="filter-chip"        data-filter="ran"     onclick="setFilter('ran')">Ran</button>
-      <button class="filter-chip"        data-filter="skipped" onclick="setFilter('skipped')">Skipped</button>
-      <button class="filter-chip"        data-filter="stopped" onclick="setFilter('stopped')">Stopped</button>
+      <!-- View toggle -->
+      <button class="filter-chip active" id="view-btn-grid" onclick="setHistoryView('grid')">📊 Grid</button>
+      <button class="filter-chip"        id="view-btn-list" onclick="setHistoryView('list')">📋 List</button>
+      <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+      <!-- List-only filters (hidden in grid view) -->
+      <button class="filter-chip active" data-filter="all"     onclick="setFilter('all')"     id="fc-all">All</button>
+      <button class="filter-chip"        data-filter="ran"      onclick="setFilter('ran')"     id="fc-ran">Ran</button>
+      <button class="filter-chip"        data-filter="skipped"  onclick="setFilter('skipped')" id="fc-skipped">Skipped</button>
+      <button class="filter-chip"        data-filter="stopped"  onclick="setFilter('stopped')" id="fc-stopped">Stopped</button>
       <button class="history-clear-btn" onclick="clearHistory()">Clear History</button>
     </div>
-    <div class="history-list" id="history-list">
-      <div class="history-empty"><div class="icon">📋</div>No events yet</div>
+
+    <!-- GRID VIEW -->
+    <div id="history-grid-view">
+      <!-- Legend -->
+      <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:600;letter-spacing:0.06em;">LEGEND</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:rgba(0,200,150,0.85);"></span>Ran (darker = longer)</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:rgba(255,107,53,0.75);"></span>Skipped</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:rgba(255,56,96,0.75);"></span>Stopped early</span>
+      </div>
+      <div id="history-grid-wrap" style="overflow-x:auto;">
+        <div id="history-grid"></div>
+      </div>
     </div>
+
+    <!-- LIST VIEW -->
+    <div id="history-list-view" style="display:none;">
+      <div class="history-list" id="history-list">
+        <div class="history-empty"><div class="icon">📋</div>No events yet</div>
+      </div>
+    </div>
+
+    <!-- Shared tooltip -->
+    <div id="grid-tooltip"></div>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -673,7 +806,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   const idx = ['zones','schedule','weather','history','settings'].indexOf(tab);
   document.querySelectorAll('nav button')[idx].classList.add('active');
-  if (tab === 'history') loadHistory();
+  if (tab === 'history') { loadHistory(); setHistoryView(historyView); }
 }
 
 // ─── Render zones ─────────────────────────────────────────────────────────────
@@ -869,6 +1002,8 @@ function dismissSkipBanner() {
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
+let historyView = 'grid';   // 'grid' | 'list'
+
 async function loadHistory() {
   try {
     allEvents = await api('/events');
@@ -876,9 +1011,22 @@ async function loadHistory() {
   } catch(e) { showToast('Could not load history', true); }
 }
 
+function setHistoryView(v) {
+  historyView = v;
+  document.getElementById('view-btn-grid').classList.toggle('active', v === 'grid');
+  document.getElementById('view-btn-list').classList.toggle('active', v === 'list');
+  document.getElementById('history-grid-view').style.display = v === 'grid' ? '' : 'none';
+  document.getElementById('history-list-view').style.display = v === 'list' ? '' : 'none';
+  // Show/hide list-only filter chips
+  ['fc-all','fc-ran','fc-skipped','fc-stopped'].forEach(id => {
+    document.getElementById(id).style.display = v === 'list' ? '' : 'none';
+  });
+  renderHistory();
+}
+
 function setFilter(f) {
   historyFilter = f;
-  document.querySelectorAll('.filter-chip').forEach(c => {
+  document.querySelectorAll('[data-filter]').forEach(c => {
     c.classList.toggle('active', c.dataset.filter === f);
   });
   renderHistory();
@@ -896,9 +1044,7 @@ function fmtTimestamp(iso) {
   const d = new Date(iso);
   const today = new Date();
   const isToday = d.toDateString() === today.toDateString();
-  if (isToday) {
-    return 'Today ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-  }
+  if (isToday) return 'Today ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
   return d.toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
@@ -908,7 +1054,173 @@ function triggerLabel(t) {
   return 'MANUAL';
 }
 
-function renderHistory() {
+// ── Grid helpers ──────────────────────────────────────────────────────────────
+// Returns a YYYY-MM-DD key in local time
+function dateKey(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Build last N days as YYYY-MM-DD strings, oldest first
+function lastNDays(n) {
+  const days = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  return days;
+}
+
+// Green intensity based on run duration: max at 30 min (1800s)
+function ranColor(secs) {
+  const pct  = Math.min(1, (secs || 0) / 1800);
+  const alpha = 0.25 + pct * 0.65;   // 0.25 → 0.90
+  return `rgba(0,200,150,${alpha.toFixed(2)})`;
+}
+
+function renderHistoryGrid() {
+  const wrap = document.getElementById('history-grid');
+
+  // Collect unique zone names in the order they first appear across all events
+  const zoneOrder = [];
+  allEvents.forEach(e => {
+    const name = e.zone_name || `Zone ${e.zone_id}`;
+    if (!zoneOrder.includes(name)) zoneOrder.push(name);
+  });
+
+  // Fall back to configured zones if no history yet
+  if (!zoneOrder.length) {
+    zones.forEach(z => zoneOrder.push(z.name));
+  }
+
+  // Determine number of days: span from earliest event up to today, max 28
+  let numDays = 14;
+  if (allEvents.length) {
+    const earliest = new Date(allEvents[allEvents.length - 1].timestamp);
+    const diffDays = Math.ceil((Date.now() - earliest) / 86400000) + 1;
+    numDays = Math.min(28, Math.max(14, diffDays));
+  }
+  const days = lastNDays(numDays);
+  const todayKey = dateKey(new Date().toISOString());
+
+  // Index events: map[zoneName][dateKey] = [events]
+  const idx = {};
+  zoneOrder.forEach(z => { idx[z] = {}; });
+  allEvents.forEach(e => {
+    const name = e.zone_name || `Zone ${e.zone_id}`;
+    const dk   = dateKey(e.timestamp);
+    if (!idx[name]) idx[name] = {};
+    if (!idx[name][dk]) idx[name][dk] = [];
+    idx[name][dk].push(e);
+  });
+
+  // Grid: (zoneOrder.length + 1) rows × (numDays + 1) cols
+  const cols   = numDays + 1;
+  const rows   = zoneOrder.length + 1;
+  const DOW    = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  wrap.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'hgrid';
+  grid.style.gridTemplateColumns = `160px repeat(${numDays}, minmax(44px, 1fr))`;
+  grid.style.gridTemplateRows    = `auto ${Array(zoneOrder.length).fill('1fr').join(' ')}`;
+
+  // ── Header row ──
+  // Corner cell
+  const corner = document.createElement('div');
+  corner.className = 'hgrid-zone-label header';
+  corner.textContent = 'ZONE / DATE';
+  grid.appendChild(corner);
+
+  days.forEach(dk => {
+    const d   = new Date(dk + 'T12:00:00');
+    const div = document.createElement('div');
+    div.className = 'hgrid-day-header' + (dk === todayKey ? ' today' : '');
+    div.innerHTML = `<div class="dow">${DOW[d.getDay()]}</div><div class="dom">${d.getDate()}</div>`;
+    grid.appendChild(div);
+  });
+
+  // ── Zone rows ──
+  zoneOrder.forEach(zoneName => {
+    // Zone label
+    const label = document.createElement('div');
+    label.className = 'hgrid-zone-label';
+    label.textContent = zoneName;
+    grid.appendChild(label);
+
+    // Day cells
+    days.forEach(dk => {
+      const cell   = document.createElement('div');
+      const events = (idx[zoneName] && idx[zoneName][dk]) || [];
+      cell.className = 'hgrid-cell' + (events.length === 0 ? ' empty' : '');
+
+      events.forEach(ev => {
+        const pill = document.createElement('span');
+        pill.className = `hgrid-pill pill-${ev.outcome}`;
+
+        if (ev.outcome === 'ran') {
+          pill.style.background = ranColor(ev.duration_secs);
+          pill.textContent = fmtDuration(ev.duration_secs);
+        } else if (ev.outcome === 'skipped') {
+          pill.textContent = '⏭ skip';
+        } else {
+          pill.textContent = '⏹ stop';
+        }
+
+        // Tooltip
+        pill.addEventListener('mousemove', evt => showGridTooltip(evt, ev, zoneName));
+        pill.addEventListener('mouseleave', hideGridTooltip);
+        pill.addEventListener('touchstart', evt => showGridTooltip(evt.touches[0], ev, zoneName));
+        cell.appendChild(pill);
+      });
+
+      grid.appendChild(cell);
+    });
+  });
+
+  wrap.appendChild(grid);
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('grid-tooltip');
+
+function showGridTooltip(mouseEvt, ev, zoneName) {
+  const time      = new Date(ev.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const dateStr   = new Date(ev.timestamp).toLocaleDateString([], { month:'short', day:'numeric' });
+  const outcomeClass = ev.outcome === 'ran' ? 'tt-ran' : ev.outcome === 'skipped' ? 'tt-skip' : 'tt-stop';
+  const outcomeText  = ev.outcome === 'ran'
+    ? `✔ Ran for ${fmtDuration(ev.duration_secs)}`
+    : ev.outcome === 'skipped'
+      ? `⏭ Skipped${ev.reason ? ': ' + ev.reason : ''}`
+      : `⏹ Stopped after ${fmtDuration(ev.duration_secs)}`;
+
+  tooltip.innerHTML = `
+    <div class="tt-zone">${zoneName}</div>
+    <div class="tt-row">${dateStr} at ${time}</div>
+    <div class="tt-row">${triggerLabel(ev.trigger)}</div>
+    <div class="tt-row ${outcomeClass}">${outcomeText}</div>
+  `;
+  tooltip.style.display = 'block';
+  positionTooltip(mouseEvt);
+}
+
+function positionTooltip(mouseEvt) {
+  const x   = mouseEvt.clientX + 14;
+  const y   = mouseEvt.clientY - 10;
+  const tw  = tooltip.offsetWidth  || 220;
+  const th  = tooltip.offsetHeight || 100;
+  tooltip.style.left = (x + tw > window.innerWidth  ? x - tw - 28 : x) + 'px';
+  tooltip.style.top  = (y + th > window.innerHeight ? y - th       : y) + 'px';
+}
+
+function hideGridTooltip() { tooltip.style.display = 'none'; }
+document.addEventListener('mousemove', e => {
+  if (tooltip.style.display !== 'none') positionTooltip(e);
+});
+
+// ── List render ───────────────────────────────────────────────────────────────
+function renderHistoryList() {
   const list = document.getElementById('history-list');
   const filtered = historyFilter === 'all'
     ? allEvents
@@ -923,12 +1235,11 @@ function renderHistory() {
   list.innerHTML = filtered.map(e => {
     const isSkipped = e.outcome === 'skipped';
     const durText   = isSkipped ? '—' : fmtDuration(e.duration_secs);
-
     return `
     <div class="event-row outcome-${e.outcome}">
       <div class="event-dot"></div>
       <div class="event-main">
-        <div class="event-zone">${e.zone_name || `Zone ${e.zone_id}`}</div>
+        <div class="event-zone">${e.zone_name || 'Zone ' + e.zone_id}</div>
         <div class="event-meta">
           <span class="event-time">${fmtTimestamp(e.timestamp)}</span>
           <span class="event-badge badge-${e.trigger}">${triggerLabel(e.trigger)}</span>
@@ -938,6 +1249,14 @@ function renderHistory() {
       <div class="event-duration ${isSkipped ? 'skipped' : ''}">${durText}</div>
     </div>`;
   }).join('');
+}
+
+function renderHistory() {
+  if (historyView === 'grid') {
+    renderHistoryGrid();
+  } else {
+    renderHistoryList();
+  }
 }
 
 async function clearHistory() {
