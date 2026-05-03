@@ -634,7 +634,7 @@
     </div>
     <div class="modal-actions">
       <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-save" onclick="saveSchedule()">Add Schedule</button>
+      <button class="btn btn-save" id="btn-modal-save" onclick="saveSchedule()">Add Schedule</button>
     </div>
   </div>
 </div>
@@ -968,7 +968,8 @@ function renderSchedule() {
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="toggle ${s.enabled?'on':''}" onclick="toggleSchedule(${s.id})"></div>
-        <button class="btn btn-edit" onclick="deleteSchedule(${s.id})" style="color:var(--warn);">🗑</button>
+        <button class="btn btn-edit" onclick="openEditSchedule(${s.id})" title="Edit">✏</button>
+        <button class="btn btn-edit" onclick="deleteSchedule(${s.id})" style="color:var(--warn);" title="Delete">🗑</button>
       </div>
     </div>
   `).join('') || '<p style="color:var(--muted);text-align:center;padding:24px;">No schedules yet.</p>';
@@ -1005,6 +1006,25 @@ function openAddSchedule() {
       <input type="checkbox" value="${z.id}" onchange="updateZoneCheck(${z.id})"> Zone ${z.id}: ${z.name.split(' ')[0]}
     </label>
   `).join('');
+  document.getElementById('btn-modal-save').textContent = 'Add Schedule';
+  document.getElementById('schedule-modal').classList.add('open');
+}
+
+function openEditSchedule(id) {
+  const s = schedules.find(s => s.id === id);
+  if (!s) return;
+  editingScheduleId = id;
+  document.getElementById('modal-title').textContent = 'Edit Schedule';
+  document.getElementById('sched-time').value = s.time;
+  document.querySelectorAll('.day-btn').forEach(b =>
+    b.classList.toggle('on', s.days.includes(b.dataset.day)));
+  const zc = document.getElementById('modal-zones');
+  zc.innerHTML = zones.map(z => `
+    <label class="zone-checkbox ${s.zones.includes(z.id) ? 'checked' : ''}" id="zcheck-${z.id}">
+      <input type="checkbox" value="${z.id}" ${s.zones.includes(z.id) ? 'checked' : ''} onchange="updateZoneCheck(${z.id})"> Zone ${z.id}: ${z.name.split(' ')[0]}
+    </label>
+  `).join('');
+  document.getElementById('btn-modal-save').textContent = 'Save Changes';
   document.getElementById('schedule-modal').classList.add('open');
 }
 
@@ -1022,11 +1042,23 @@ async function saveSchedule() {
   if (!days.length)    return alert('Select at least one day');
   if (!zoneIds.length) return alert('Select at least one zone');
   try {
-    const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true });
-    schedules.push(newSched);
-    renderSchedule();
-    closeModal();
-    showToast('Schedule added!');
+    if (editingScheduleId !== null) {
+      // Edit existing — PUT full replacement
+      const s = schedules.find(s => s.id === editingScheduleId);
+      const updated = await api(`/schedules/${editingScheduleId}`, 'PUT',
+        { time, days, zones: zoneIds, enabled: s.enabled });
+      Object.assign(s, updated);
+      renderSchedule();
+      closeModal();
+      showToast('Schedule updated!');
+    } else {
+      // Add new
+      const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true });
+      schedules.push(newSched);
+      renderSchedule();
+      closeModal();
+      showToast('Schedule added!');
+    }
   } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
