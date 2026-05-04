@@ -139,6 +139,20 @@
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
   .pulse-dot { width:8px; height:8px; border-radius:50%; background:white; animation:pulse 1.2s ease-in-out infinite; }
 
+  .queued-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(0,132,255,0.1);
+    border: 1px solid rgba(0,132,255,0.3);
+    border-radius: 12px; padding: 8px 14px;
+    font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700;
+    color: var(--accent2);
+  }
+  .queued-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
   /* ---- ZONES ---- */
   .zones-grid {
     display: grid;
@@ -588,6 +602,10 @@
       <button class="btn-stop-all" onclick="stopAll()">
         ⏹ Stop All
       </button>
+      <div class="queued-badge" id="queued-badge" style="display:none;">
+        <span class="queued-dot"></span>
+        <span id="queued-label">1 schedule queued</span>
+      </div>
       <button class="btn-force-skip" id="btn-force-skip" onclick="toggleForceSkip()">
         <span id="force-skip-icon">⏭</span>
         <span id="force-skip-label">Skip Next Run</span>
@@ -958,6 +976,23 @@ async function pollStatus() {
 
     if (prevRunAll !== runAllActive || prevSkip !== forceSkipArmed) {
       updateToolbarButtons();
+    }
+
+    // Queued-schedules badge
+    const queued    = data.schedules_queued || 0;
+    const busy      = data.schedule_busy    || false;
+    const qBadge    = document.getElementById('queued-badge');
+    const qLabel    = document.getElementById('queued-label');
+    if (qBadge) {
+      const show = queued > 0 || busy;
+      qBadge.style.display = show ? 'flex' : 'none';
+      if (show) {
+        if (queued > 0) {
+          qLabel.textContent = queued === 1 ? '1 schedule queued' : `${queued} schedules queued`;
+        } else {
+          qLabel.textContent = 'Schedule running';
+        }
+      }
     }
 
     const badge = document.getElementById('master-badge');
