@@ -167,8 +167,14 @@ init_gpio()
 # ── Zone run state ────────────────────────────────────────────────────────────
 running: dict  = {}   # zone_id → {thread, stop_event, start, end, duration, trigger, schedule_id}
 run_lock       = threading.Lock()
-run_all_active = threading.Event()
-run_all_stop   = threading.Event()   # set this to abort _run_all_thread between zones
+run_all_active    = threading.Event()
+run_all_stop      = threading.Event()   # set this to abort _run_all_thread between zones
+
+# Serialises all scheduled and run-all sequences so they never overlap.
+# Manual single-zone runs bypass this lock entirely and fire immediately.
+schedule_lock     = threading.Lock()
+schedules_queued  = 0                   # count of sequences waiting or running
+schedules_queued_lock = threading.Lock()
 
 
 def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Event,
@@ -267,51 +273,57 @@ def stop_all():
 
 # ── Run-all sequence ──────────────────────────────────────────────────────────
 def _run_all_thread():
-    run_all_active.set()
-    run_all_stop.clear()        # reset abort flag at start of each new sequence
-    log.info("Run-all sequence started")
-    try:
-        for zone in state["zones"]:
-            # Check abort flag before starting each zone
-            if run_all_stop.is_set():
-                log.info("Run-all aborted by stop signal")
-                break
-            if not state["master_enabled"]:
-                log.info("Run-all aborted: master switch disabled")
-                break
-            if not zone["enabled"]:
-                log.info(f"Run-all: skipping zone {zone['id']} ({zone['name']}) – disabled")
-                continue
+    global schedules_queued
+    with schedules_queued_lock:
+        schedules_queued += 1
+    log.info(f"Run-all queued (queue depth: {schedules_queued})")
 
-            secs   = zone["duration"] * 60
-            result = start_zone(zone["id"], secs, trigger="run_all")
-            if "error" in result:
-                log.warning(f"Run-all: zone {zone['id']} skipped – {result['error']}")
-                continue
-
-            zone_id = zone["id"]
-            # Poll until zone finishes or abort is signalled
-            while True:
+    with schedule_lock:            # blocks until any running scheduled/run-all sequence finishes
+        with schedules_queued_lock:
+            schedules_queued -= 1
+        run_all_active.set()
+        run_all_stop.clear()
+        log.info("Run-all sequence started")
+        try:
+            for zone in state["zones"]:
                 if run_all_stop.is_set():
-                    stop_zone(zone_id)
-                    log.info("Run-all: stop signal mid-zone, aborting sequence")
+                    log.info("Run-all aborted by stop signal")
                     break
                 if not state["master_enabled"]:
-                    stop_all()
+                    log.info("Run-all aborted: master switch disabled")
                     break
-                with run_lock:
-                    still_running = zone_id in running
-                if not still_running:
+                if not zone["enabled"]:
+                    log.info(f"Run-all: skipping zone {zone['id']} ({zone['name']}) – disabled")
+                    continue
+
+                secs   = zone["duration"] * 60
+                result = start_zone(zone["id"], secs, trigger="run_all")
+                if "error" in result:
+                    log.warning(f"Run-all: zone {zone['id']} skipped – {result['error']}")
+                    continue
+
+                zone_id = zone["id"]
+                while True:
+                    if run_all_stop.is_set():
+                        stop_zone(zone_id)
+                        log.info("Run-all: stop signal mid-zone, aborting sequence")
+                        break
+                    if not state["master_enabled"]:
+                        stop_all()
+                        break
+                    with run_lock:
+                        still_running = zone_id in running
+                    if not still_running:
+                        break
+                    time.sleep(1)
+
+                if run_all_stop.is_set() or not state["master_enabled"]:
                     break
-                time.sleep(1)
 
-            if run_all_stop.is_set() or not state["master_enabled"]:
-                break
-
-            time.sleep(2)   # brief gap between zones
-    finally:
-        run_all_active.clear()
-        log.info("Run-all sequence complete")
+                time.sleep(2)
+        finally:
+            run_all_active.clear()
+            log.info("Run-all sequence complete")
 
 
 # ── Weather skip helpers ──────────────────────────────────────────────────────
@@ -405,12 +417,38 @@ def _scheduler_loop():
                             })
                         continue
 
-                    # ── Run zones ──
-                    for zone_id in sched["zones"]:
-                        start_zone(zone_id, trigger="scheduled", schedule_id=sched["id"])
-                        z = next((z for z in state["zones"] if z["id"] == zone_id), None)
-                        if z:
-                            time.sleep(z["duration"] * 60 + 2)
+                    # ── Run zones (serialised via schedule_lock) ──
+                    # Kick off in a background thread so the scheduler loop
+                    # can keep ticking and queue the next schedule if needed.
+                    sched_copy = dict(sched)   # snapshot – avoid mutation races
+                    def _run_schedule(s=sched_copy):
+                        global schedules_queued
+                        with schedules_queued_lock:
+                            schedules_queued += 1
+                        log.info(f"Schedule {s['id']} queued (queue depth: {schedules_queued})")
+                        with schedule_lock:
+                            with schedules_queued_lock:
+                                schedules_queued -= 1
+                            log.info(f"Schedule {s['id']} starting zone sequence")
+                            for zone_id in s["zones"]:
+                                # Re-check master each zone in case it was toggled
+                                if not state["master_enabled"]:
+                                    log.info(f"Schedule {s['id']} aborted mid-run: master disabled")
+                                    break
+                                result = start_zone(zone_id, trigger="scheduled", schedule_id=s["id"])
+                                if "error" in result:
+                                    log.warning(f"Schedule {s['id']} zone {zone_id} skipped – {result['error']}")
+                                    continue
+                                # Wait for this zone to finish before moving to the next
+                                while True:
+                                    with run_lock:
+                                        still_running = zone_id in running
+                                    if not still_running:
+                                        break
+                                    time.sleep(1)
+                                time.sleep(2)
+                            log.info(f"Schedule {s['id']} zone sequence complete")
+                    threading.Thread(target=_run_schedule, daemon=True).start()
 
             last_triggered.add(minute_key)
             if len(last_triggered) > 10:
@@ -545,14 +583,18 @@ def status():
             }
             for zone_id, info in running.items()
         }
+    with schedules_queued_lock:
+        queued = schedules_queued
     return jsonify({
-        "running":         active,
-        "master_enabled":  state["master_enabled"],
-        "active_high":     state["active_high"],
-        "on_pi":           ON_PI,
-        "last_skip":       state.get("last_skip"),
-        "force_skip_next": state.get("force_skip_next", False),
-        "run_all_active":  run_all_active.is_set(),
+        "running":          active,
+        "master_enabled":   state["master_enabled"],
+        "active_high":      state["active_high"],
+        "on_pi":            ON_PI,
+        "last_skip":        state.get("last_skip"),
+        "force_skip_next":  state.get("force_skip_next", False),
+        "run_all_active":   run_all_active.is_set(),
+        "schedule_busy":    schedule_lock.locked(),
+        "schedules_queued": queued,
     })
 
 @app.route("/api/events", methods=["GET"])
