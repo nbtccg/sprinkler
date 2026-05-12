@@ -658,7 +658,7 @@
       <h3>Auto-Skip Rules</h3>
       <div class="skip-rules">
         <div class="skip-rule">
-          <div class="skip-rule-label">Skip if rain forecast <span>Active weather conditions</span></div>
+          <div class="skip-rule-label">Skip if rain forecast <span>Forecast probability next 24h</span></div>
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="number" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;outline:none;text-align:center;" id="rain-threshold" value="40" min="0" max="100">
             <span style="font-size:0.8rem;color:var(--muted);">%</span>
@@ -1501,10 +1501,30 @@ function updateWeatherUI(cached) {
   document.getElementById('header-desc').textContent        = cached.description;
   document.getElementById('weather-icon-big').textContent   = icon;
   document.getElementById('weather-temp-big').textContent   = cached.temp + '°F';
-  document.getElementById('weather-desc-big').textContent   = `${cached.description} · Humidity ${cached.humidity}%`;
+
+  // Show current conditions + wind in subtitle
+  const windStr = cached.wind != null ? ` · Wind ${cached.wind}mph` : '';
+  document.getElementById('weather-desc-big').textContent =
+    `${cached.description} · Humidity ${cached.humidity}%${windStr}`;
+
+  // Rain forecast line — show actual probability from forecast endpoint
   if (!document.getElementById('skip-banner').classList.contains('visible')) {
-    document.getElementById('weather-precip').textContent = cached.is_rainy ? '⚠ Rain detected' : 'Conditions OK — watering will proceed';
-    document.getElementById('weather-precip').style.color = cached.is_rainy ? 'var(--warn)' : 'var(--accent)';
+    const pop   = cached.max_rain_pop != null ? cached.max_rain_pop : null;
+    const hours = cached.forecast_hours || 24;
+    let precipText, precipColor;
+    if (pop == null) {
+      // No forecast data yet (API key not set etc.)
+      precipText  = cached.is_rainy ? '⚠ Currently raining' : 'No forecast data';
+      precipColor = cached.is_rainy ? 'var(--warn)' : 'var(--muted)';
+    } else if (pop >= 40) {
+      precipText  = `⚠ ${pop}% rain chance in next ${hours}h`;
+      precipColor = 'var(--warn)';
+    } else {
+      precipText  = `${pop}% rain chance in next ${hours}h — OK to water`;
+      precipColor = 'var(--accent)';
+    }
+    document.getElementById('weather-precip').textContent = precipText;
+    document.getElementById('weather-precip').style.color = precipColor;
   }
 }
 
