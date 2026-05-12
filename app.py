@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """
 Lawn Sprinkler Flask Backend
-Runs on Raspberry Pi and controls GPIO pins for zone solenoids.
-Serves the sprinkler.html frontend and exposes a REST API.
-
-Install dependencies:
-    pip install flask flask-cors requests gpiod
-
-Run:
-    python3 app.py
 """
 
 import json
@@ -22,7 +14,6 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-# ── GPIO setup (gpiod v2 API) ─────────────────────────────────────────────────
 try:
     import gpiod
     from gpiod.line import Direction, Value
@@ -35,14 +26,10 @@ except (ImportError, Exception) as e:
     gpiod = None
     logging.warning(f"gpiod not available – running in simulation mode. ({e})")
 
-# ── App & config ──────────────────────────────────────────────────────────────
 app = Flask(__name__, static_folder=".")
 CORS(app)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
 DATA_FILE   = Path(__file__).parent / "config.json"
@@ -75,7 +62,6 @@ DEFAULT_WEATHER = {
     "wind_threshold": 20,
 }
 
-# ── Persistent state ──────────────────────────────────────────────────────────
 def load_data():
     if DATA_FILE.exists():
         with open(DATA_FILE) as f:
@@ -96,12 +82,10 @@ def save_data():
 
 state = load_data()
 
-# Backfill keys added in later versions
 for _key, _default in [("last_skip", None), ("force_skip_next", False)]:
     if _key not in state:
         state[_key] = _default
 
-# ── Event log ─────────────────────────────────────────────────────────────────
 events_lock = threading.Lock()
 
 def load_events() -> list:
@@ -118,28 +102,14 @@ def save_events(evts: list):
         json.dump(evts[-MAX_EVENTS:], f, indent=2)
 
 def append_event(event: dict):
-    """
-    Append one event to the persistent log (capped at MAX_EVENTS).
-
-    Fields:
-        timestamp    – ISO-8601 string
-        trigger      – "scheduled" | "manual" | "run_all"
-        outcome      – "ran" | "skipped" | "stopped"
-        zone_id      – int
-        zone_name    – str
-        duration_secs – int actual elapsed seconds (None if skipped)
-        reason       – str skip/stop reason, or None
-        schedule_id  – int if triggered by scheduler, else None
-    """
     with events_lock:
         evts = load_events()
         evts.append(event)
         save_events(evts)
 
-# ── GPIO helpers ──────────────────────────────────────────────────────────────
 def _gpio_set(pin: int, value: bool):
     if not ON_PI:
-        log.info(f"[SIM] GPIO {pin} → {'HIGH' if value else 'LOW'}")
+        log.info(f"[SIM] GPIO {pin} -> {'HIGH' if value else 'LOW'}")
         return
     try:
         with gpiod.request_lines(
@@ -160,20 +130,17 @@ def _relay_off(pin: int):
 def init_gpio():
     for zone in state["zones"]:
         _relay_off(zone["gpio"])
-        log.info(f"Zone {zone['id']} ({zone['name']}) → GPIO {zone['gpio']} initialised")
+        log.info(f"Zone {zone['id']} ({zone['name']}) -> GPIO {zone['gpio']} initialised")
 
 init_gpio()
 
-# ── Zone run state ────────────────────────────────────────────────────────────
-running: dict  = {}   # zone_id → {thread, stop_event, start, end, duration, trigger, schedule_id}
+running: dict  = {}
 run_lock       = threading.Lock()
 run_all_active    = threading.Event()
-run_all_stop      = threading.Event()   # set this to abort _run_all_thread between zones
+run_all_stop      = threading.Event()
 
-# Serialises all scheduled and run-all sequences so they never overlap.
-# Manual single-zone runs bypass this lock entirely and fire immediately.
-schedule_lock     = threading.Lock()
-schedules_queued  = 0                   # count of sequences waiting or running
+schedule_lock         = threading.Lock()
+schedules_queued      = 0
 schedules_queued_lock = threading.Lock()
 
 
@@ -182,22 +149,17 @@ def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Eve
     zone = next((z for z in state["zones"] if z["id"] == zone_id), None)
     if not zone:
         return
-
     pin       = zone["gpio"]
     zone_name = zone["name"]
     start_ts  = time.time()
-
-    log.info(f"Zone {zone_id} ({zone_name}) ON  – pin {pin} for {duration_secs}s [{trigger}]")
+    log.info(f"Zone {zone_id} ({zone_name}) ON  - pin {pin} for {duration_secs}s [{trigger}]")
     _relay_on(pin)
     stop_event.wait(timeout=duration_secs)
     _relay_off(pin)
-
     elapsed = round(time.time() - start_ts)
     stopped = stop_event.is_set() and elapsed < duration_secs - 1
     outcome = "stopped" if stopped else "ran"
-
-    log.info(f"Zone {zone_id} ({zone_name}) OFF – {elapsed}s elapsed, outcome={outcome}")
-
+    log.info(f"Zone {zone_id} ({zone_name}) OFF - {elapsed}s elapsed, outcome={outcome}")
     append_event({
         "timestamp":     datetime.now().isoformat(),
         "trigger":       trigger,
@@ -208,7 +170,6 @@ def _run_zone_thread(zone_id: int, duration_secs: int, stop_event: threading.Eve
         "reason":        "Manually stopped" if stopped else None,
         "schedule_id":   schedule_id,
     })
-
     with run_lock:
         running.pop(zone_id, None)
 
@@ -222,9 +183,7 @@ def start_zone(zone_id: int, duration_secs=None,
         return {"error": "Master switch is disabled"}
     if not zone["enabled"]:
         return {"error": "Zone is disabled"}
-
     secs = duration_secs or zone["duration"] * 60
-
     with run_lock:
         for info in running.values():
             info["stop_event"].set()
@@ -232,7 +191,6 @@ def start_zone(zone_id: int, duration_secs=None,
             run_lock.release()
             time.sleep(0.5)
             run_lock.acquire()
-
         stop_event = threading.Event()
         t = threading.Thread(
             target=_run_zone_thread,
@@ -250,7 +208,6 @@ def start_zone(zone_id: int, duration_secs=None,
             "schedule_id": schedule_id,
         }
         t.start()
-
     return {"ok": True, "zone_id": zone_id, "duration_secs": secs}
 
 
@@ -264,21 +221,18 @@ def stop_zone(zone_id: int) -> dict:
 
 
 def stop_all():
-    """Stop all running zones AND abort any in-progress run-all sequence."""
     run_all_stop.set()
     with run_lock:
         for info in running.values():
             info["stop_event"].set()
 
 
-# ── Run-all sequence ──────────────────────────────────────────────────────────
 def _run_all_thread():
     global schedules_queued
     with schedules_queued_lock:
         schedules_queued += 1
     log.info(f"Run-all queued (queue depth: {schedules_queued})")
-
-    with schedule_lock:            # blocks until any running scheduled/run-all sequence finishes
+    with schedule_lock:
         with schedules_queued_lock:
             schedules_queued -= 1
         run_all_active.set()
@@ -293,15 +247,13 @@ def _run_all_thread():
                     log.info("Run-all aborted: master switch disabled")
                     break
                 if not zone["enabled"]:
-                    log.info(f"Run-all: skipping zone {zone['id']} ({zone['name']}) – disabled")
+                    log.info(f"Run-all: skipping zone {zone['id']} ({zone['name']}) - disabled")
                     continue
-
                 secs   = zone["duration"] * 60
                 result = start_zone(zone["id"], secs, trigger="run_all")
                 if "error" in result:
-                    log.warning(f"Run-all: zone {zone['id']} skipped – {result['error']}")
+                    log.warning(f"Run-all: zone {zone['id']} skipped - {result['error']}")
                     continue
-
                 zone_id = zone["id"]
                 while True:
                     if run_all_stop.is_set():
@@ -316,24 +268,118 @@ def _run_all_thread():
                     if not still_running:
                         break
                     time.sleep(1)
-
                 if run_all_stop.is_set() or not state["master_enabled"]:
                     break
-
                 time.sleep(2)
         finally:
             run_all_active.clear()
             log.info("Run-all sequence complete")
 
 
-# ── Weather skip helpers ──────────────────────────────────────────────────────
+# ── Weather fetcher ────────────────────────────────────────────────────────────
+def fetch_weather_cache():
+    """
+    Fetches two OWM endpoints and merges results into a single cache object.
+
+    Current conditions (/data/2.5/weather):
+        temp, humidity, wind, description — used for cold/wind skip checks.
+
+    5-day/3-hour forecast (/data/2.5/forecast):
+        Scans the next 24 hours of intervals (cnt=8) and records the highest
+        precipitation probability (pop, 0.0-1.0) found. This is what the
+        rain_threshold percentage is compared against, so skip decisions are
+        based on what's actually coming rather than current conditions.
+    """
+    w   = state.get("weather", {})
+    key = w.get("api_key", "")
+    loc = w.get("location", "")
+    if not key or not loc:
+        return None
+    try:
+        # ── Current conditions (temp, wind, humidity) ──────────────────────
+        cur_url  = (
+            f"https://api.openweathermap.org/data/2.5/weather"
+            f"?q={loc}&appid={key}&units=imperial"
+        )
+        cur_r    = requests.get(cur_url, timeout=10)
+        cur_data = cur_r.json()
+        if cur_data.get("cod") != 200:
+            log.warning(f"Weather API (current) error: {cur_data.get('message')}")
+            return None
+
+        # ── 3-hour forecast — next 24 hours (8 x 3h intervals) ────────────
+        fcast_url  = (
+            f"https://api.openweathermap.org/data/2.5/forecast"
+            f"?q={loc}&appid={key}&units=imperial&cnt=8"
+        )
+        fcast_r    = requests.get(fcast_url, timeout=10)
+        fcast_data = fcast_r.json()
+
+        max_rain_pop   = 0.0
+        forecast_hours = 0
+
+        if str(fcast_data.get("cod")) == "200":
+            intervals      = fcast_data.get("list", [])
+            forecast_hours = len(intervals) * 3
+            for interval in intervals:
+                pop = interval.get("pop", 0.0)
+                if pop > max_rain_pop:
+                    max_rain_pop = pop
+            log.info(
+                f"Forecast: max rain prob {round(max_rain_pop*100)}% "
+                f"over next {forecast_hours}h ({len(intervals)} intervals)"
+            )
+        else:
+            log.warning(f"Weather API (forecast) error: {fcast_data.get('message')}")
+            # Fall back: treat currently rainy conditions as 100% probability
+            is_currently_rainy = cur_data["weather"][0]["main"] in [
+                "Rain", "Drizzle", "Thunderstorm", "Snow"
+            ]
+            max_rain_pop   = 1.0 if is_currently_rainy else 0.0
+            forecast_hours = 0
+
+        cached = {
+            "temp":           round(cur_data["main"]["temp"]),
+            "humidity":       cur_data["main"]["humidity"],
+            "wind":           round(cur_data["wind"]["speed"]),
+            "description":    cur_data["weather"][0]["description"],
+            "main":           cur_data["weather"][0]["main"],
+            # is_rainy = current conditions only; skip logic uses max_rain_pop
+            "is_rainy":       cur_data["weather"][0]["main"] in [
+                                  "Rain", "Drizzle", "Thunderstorm", "Snow"
+                              ],
+            "max_rain_pop":   round(max_rain_pop * 100),  # stored 0-100 for display
+            "forecast_hours": forecast_hours,
+            "fetched_at":     datetime.now().isoformat(),
+        }
+        state["weather"]["_cached"] = cached
+        save_data()
+        return cached
+    except Exception as e:
+        log.error(f"Weather fetch failed: {e}")
+        return None
+
+
+def _weather_refresh_loop():
+    while True:
+        fetch_weather_cache()
+        time.sleep(30 * 60)
+
+threading.Thread(target=_weather_refresh_loop, daemon=True).start()
+
+
+# ── Weather skip helpers ───────────────────────────────────────────────────────
 def _should_skip_weather() -> bool:
     w      = state.get("weather", {})
     cached = w.get("_cached", {})
     if not cached:
         return False
-    if w.get("skip_rain") and cached.get("is_rainy"):
-        return True
+    # Rain: compare highest forecast pop in next 24h against threshold
+    if w.get("skip_rain"):
+        max_pop   = cached.get("max_rain_pop", 0)   # 0-100
+        threshold = w.get("rain_threshold", 40)      # 0-100
+        if max_pop >= threshold:
+            return True
     if w.get("skip_cold") and cached.get("temp", 999) < w.get("cold_threshold", 35):
         return True
     if w.get("skip_wind") and cached.get("wind", 0) > w.get("wind_threshold", 20):
@@ -343,8 +389,12 @@ def _should_skip_weather() -> bool:
 def _skip_reason() -> str:
     w      = state.get("weather", {})
     cached = w.get("_cached", {})
-    if w.get("skip_rain") and cached.get("is_rainy"):
-        return "Rain detected"
+    if w.get("skip_rain"):
+        max_pop   = cached.get("max_rain_pop", 0)
+        threshold = w.get("rain_threshold", 40)
+        hours     = cached.get("forecast_hours", 24)
+        if max_pop >= threshold:
+            return f"{max_pop}% rain chance in next {hours}h (threshold {threshold}%)"
     if w.get("skip_cold") and cached.get("temp", 999) < w.get("cold_threshold", 35):
         return f"Temp {cached.get('temp')}°F below {w.get('cold_threshold')}°F"
     if w.get("skip_wind") and cached.get("wind", 0) > w.get("wind_threshold", 20):
@@ -368,7 +418,6 @@ def _scheduler_loop():
                         and current_day in sched["days"]):
                     log.info(f"Scheduler firing: schedule {sched['id']}")
 
-                    # ── Force-skip check ──
                     if state.get("force_skip_next"):
                         reason = "Manually forced skip"
                         log.info("Skipping: force skip flag set")
@@ -393,7 +442,6 @@ def _scheduler_loop():
                             })
                         continue
 
-                    # ── Weather-skip check ──
                     if _should_skip_weather():
                         reason = _skip_reason()
                         log.info(f"Skipping due to weather: {reason}")
@@ -417,10 +465,7 @@ def _scheduler_loop():
                             })
                         continue
 
-                    # ── Run zones (serialised via schedule_lock) ──
-                    # Kick off in a background thread so the scheduler loop
-                    # can keep ticking and queue the next schedule if needed.
-                    sched_copy = dict(sched)   # snapshot – avoid mutation races
+                    sched_copy = dict(sched)
                     def _run_schedule(s=sched_copy):
                         global schedules_queued
                         with schedules_queued_lock:
@@ -431,15 +476,13 @@ def _scheduler_loop():
                                 schedules_queued -= 1
                             log.info(f"Schedule {s['id']} starting zone sequence")
                             for zone_id in s["zones"]:
-                                # Re-check master each zone in case it was toggled
                                 if not state["master_enabled"]:
-                                    log.info(f"Schedule {s['id']} aborted mid-run: master disabled")
+                                    log.info(f"Schedule {s['id']} aborted: master disabled")
                                     break
                                 result = start_zone(zone_id, trigger="scheduled", schedule_id=s["id"])
                                 if "error" in result:
-                                    log.warning(f"Schedule {s['id']} zone {zone_id} skipped – {result['error']}")
+                                    log.warning(f"Schedule {s['id']} zone {zone_id} skipped - {result['error']}")
                                     continue
-                                # Wait for this zone to finish before moving to the next
                                 while True:
                                     with run_lock:
                                         still_running = zone_id in running
@@ -458,47 +501,6 @@ def _scheduler_loop():
 
 threading.Thread(target=_scheduler_loop, daemon=True).start()
 log.info("Scheduler started")
-
-
-# ── Weather fetcher ───────────────────────────────────────────────────────────
-def fetch_weather_cache():
-    w   = state.get("weather", {})
-    key = w.get("api_key", "")
-    loc = w.get("location", "")
-    if not key or not loc:
-        return None
-    try:
-        url = (
-            f"https://api.openweathermap.org/data/2.5/weather"
-            f"?q={loc}&appid={key}&units=imperial"
-        )
-        r    = requests.get(url, timeout=10)
-        data = r.json()
-        if data.get("cod") != 200:
-            log.warning(f"Weather API error: {data.get('message')}")
-            return None
-        cached = {
-            "temp":        round(data["main"]["temp"]),
-            "humidity":    data["main"]["humidity"],
-            "wind":        round(data["wind"]["speed"]),
-            "description": data["weather"][0]["description"],
-            "main":        data["weather"][0]["main"],
-            "is_rainy":    data["weather"][0]["main"] in ["Rain","Drizzle","Thunderstorm","Snow"],
-            "fetched_at":  datetime.now().isoformat(),
-        }
-        state["weather"]["_cached"] = cached
-        save_data()
-        return cached
-    except Exception as e:
-        log.error(f"Weather fetch failed: {e}")
-        return None
-
-def _weather_refresh_loop():
-    while True:
-        fetch_weather_cache()
-        time.sleep(30 * 60)
-
-threading.Thread(target=_weather_refresh_loop, daemon=True).start()
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -599,7 +601,6 @@ def status():
 
 @app.route("/api/events", methods=["GET"])
 def get_events():
-    """Return event history newest-first. Optional ?limit=N."""
     limit = request.args.get("limit", MAX_EVENTS, type=int)
     with events_lock:
         evts = load_events()
@@ -636,7 +637,6 @@ def patch_schedule(sched_id):
 
 @app.route("/api/schedules/<int:sched_id>", methods=["PUT"])
 def replace_schedule(sched_id):
-    """Fully replace a schedule's time, days, zones, and enabled state."""
     sched = next((s for s in state["schedules"] if s["id"] == sched_id), None)
     if not sched:
         return jsonify({"error": "Not found"}), 404
@@ -698,7 +698,6 @@ def get_logs():
     return jsonify({"lines": ["No log file yet"]})
 
 
-# ── Cleanup on exit ───────────────────────────────────────────────────────────
 import atexit
 @atexit.register
 def cleanup():
@@ -709,11 +708,9 @@ def cleanup():
     log.info("GPIO cleaned up")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     fh = logging.FileHandler(Path(__file__).parent / "sprinkler.log")
     fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
     logging.getLogger().addHandler(fh)
-
     log.info(f"Starting sprinkler backend (Pi={ON_PI})")
     app.run(host="0.0.0.0", port=8080, debug=False)
