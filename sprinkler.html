@@ -1137,7 +1137,10 @@ function renderHistoryGrid() {
     numDays = Math.min(28, Math.max(14, diffDays));
   }
   const days = lastNDays(numDays);
-  const todayKey = dateKey(new Date().toISOString());
+  // Use local date for todayKey — toISOString() returns UTC which can be
+  // a different date than local time (e.g. evening in US timezones)
+  const _now = new Date();
+  const todayKey = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
   // Index events: map[zoneName][dateKey] = [events]
   const idx = {};
