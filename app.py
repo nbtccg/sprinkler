@@ -47,8 +47,8 @@ DEFAULT_ZONES = [
 ]
 
 DEFAULT_SCHEDULES = [
-    {"id": 1, "time": "06:00", "days": ["Mon","Wed","Fri"], "zones": [1,2,3], "enabled": True},
-    {"id": 2, "time": "19:00", "days": ["Sat","Sun"],       "zones": [4,5,6,7], "enabled": True},
+    {"id": 1, "time": "06:00", "days": ["Mon","Wed","Fri"], "zones": [1,2,3], "enabled": True, "duration_mins": None},
+    {"id": 2, "time": "19:00", "days": ["Sat","Sun"],       "zones": [4,5,6,7], "enabled": True, "duration_mins": None},
 ]
 
 DEFAULT_WEATHER = {
@@ -475,11 +475,13 @@ def _scheduler_loop():
                             with schedules_queued_lock:
                                 schedules_queued -= 1
                             log.info(f"Schedule {s['id']} starting zone sequence")
+                            sched_dur = s.get("duration_mins")
+                            sched_dur_secs = int(sched_dur) * 60 if sched_dur else None
                             for zone_id in s["zones"]:
                                 if not state["master_enabled"]:
                                     log.info(f"Schedule {s['id']} aborted: master disabled")
                                     break
-                                result = start_zone(zone_id, trigger="scheduled", schedule_id=s["id"])
+                                result = start_zone(zone_id, duration_secs=sched_dur_secs, trigger="scheduled", schedule_id=s["id"])
                                 if "error" in result:
                                     log.warning(f"Schedule {s['id']} zone {zone_id} skipped - {result['error']}")
                                     continue
@@ -641,10 +643,11 @@ def replace_schedule(sched_id):
     if not sched:
         return jsonify({"error": "Not found"}), 404
     body = request.json or {}
-    sched["time"]    = body.get("time",    sched["time"])
-    sched["days"]    = body.get("days",    sched["days"])
-    sched["zones"]   = body.get("zones",   sched["zones"])
-    sched["enabled"] = body.get("enabled", sched["enabled"])
+    sched["time"]         = body.get("time",         sched["time"])
+    sched["days"]         = body.get("days",         sched["days"])
+    sched["zones"]        = body.get("zones",        sched["zones"])
+    sched["enabled"]      = body.get("enabled",      sched["enabled"])
+    sched["duration_mins"] = body.get("duration_mins", sched.get("duration_mins"))
     save_data()
     return jsonify(sched)
 
