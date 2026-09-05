@@ -780,6 +780,15 @@
       </div>
     </div>
     <div class="form-row">
+      <label>Duration per zone</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="number" id="sched-duration" min="1" max="120" placeholder="—"
+          style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:0.9rem;outline:none;text-align:center;"
+          oninput="document.getElementById('sched-duration').style.borderColor=this.value?'var(--accent2)':'var(--border)'">
+        <span style="font-size:0.85rem;color:var(--muted);">min &nbsp;(leave blank to use each zone's default)</span>
+      </div>
+    </div>
+    <div class="form-row">
       <label>Zones to water</label>
       <div class="zone-checkboxes" id="modal-zones"></div>
     </div>
@@ -1318,6 +1327,7 @@ function renderSchedule() {
         <div style="font-size:0.85rem;font-weight:600;">
           ${s.zones.length} zone${s.zones.length>1?'s':''} ·
           ${s.zones.map(id => { const z = zones.find(z=>z.id===id); return z ? z.name.split(' ')[0] : '?'; }).join(', ')}
+          ${s.duration_mins ? `<span style="color:var(--accent);font-family:'DM Mono',monospace;font-size:0.78rem;margin-left:6px;">⏱ ${s.duration_mins}min</span>` : ''}
         </div>
         <div class="schedule-days">
           ${allDays.map(d => `<span class="day-chip ${s.days.includes(d)?'on':''}">${d}</span>`).join('')}
@@ -1355,6 +1365,8 @@ function openAddSchedule() {
   editingScheduleId = null;
   document.getElementById('modal-title').textContent = 'Add Schedule';
   document.getElementById('sched-time').value = '06:00';
+  document.getElementById('sched-duration').value = '';
+  document.getElementById('sched-duration').style.borderColor = 'var(--border)';
   document.querySelectorAll('.day-btn').forEach(b =>
     b.classList.toggle('on', ['Mon','Tue','Wed','Thu','Fri'].includes(b.dataset.day)));
   const zc = document.getElementById('modal-zones');
@@ -1373,6 +1385,8 @@ function openEditSchedule(id) {
   editingScheduleId = id;
   document.getElementById('modal-title').textContent = 'Edit Schedule';
   document.getElementById('sched-time').value = s.time;
+  document.getElementById('sched-duration').value = s.duration_mins != null ? s.duration_mins : '';
+  document.getElementById('sched-duration').style.borderColor = s.duration_mins ? 'var(--accent2)' : 'var(--border)';
   document.querySelectorAll('.day-btn').forEach(b =>
     b.classList.toggle('on', s.days.includes(b.dataset.day)));
   const zc = document.getElementById('modal-zones');
@@ -1393,9 +1407,11 @@ function updateZoneCheck(id) {
 function closeModal() { document.getElementById('schedule-modal').classList.remove('open'); }
 
 async function saveSchedule() {
-  const time    = document.getElementById('sched-time').value;
-  const days    = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
-  const zoneIds = [...document.querySelectorAll('#modal-zones input:checked')].map(i => parseInt(i.value));
+  const time         = document.getElementById('sched-time').value;
+  const days         = [...document.querySelectorAll('.day-btn.on')].map(b => b.dataset.day);
+  const zoneIds      = [...document.querySelectorAll('#modal-zones input:checked')].map(i => parseInt(i.value));
+  const durRaw       = document.getElementById('sched-duration').value;
+  const duration_mins = durRaw ? parseInt(durRaw) : null;
   if (!days.length)    return alert('Select at least one day');
   if (!zoneIds.length) return alert('Select at least one zone');
   try {
@@ -1403,14 +1419,14 @@ async function saveSchedule() {
       // Edit existing — PUT full replacement
       const s = schedules.find(s => s.id === editingScheduleId);
       const updated = await api(`/schedules/${editingScheduleId}`, 'PUT',
-        { time, days, zones: zoneIds, enabled: s.enabled });
+        { time, days, zones: zoneIds, enabled: s.enabled, duration_mins });
       Object.assign(s, updated);
       renderSchedule();
       closeModal();
       showToast('Schedule updated!');
     } else {
       // Add new
-      const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true });
+      const newSched = await api('/schedules', 'POST', { time, days, zones: zoneIds, enabled: true, duration_mins });
       schedules.push(newSched);
       renderSchedule();
       closeModal();
