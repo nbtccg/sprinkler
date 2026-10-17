@@ -356,6 +356,30 @@
   .badge-scheduled { background: rgba(0,132,255,0.15); color: var(--accent2); }
   .badge-manual    { background: rgba(0,200,150,0.12); color: var(--accent); }
   .badge-run_all   { background: rgba(0,200,150,0.12); color: var(--accent); }
+  .badge-blowout   { background: rgba(160,120,255,0.15); color: #b79cff; }
+
+  .btn-blowout {
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 18px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+  }
+  .btn-blowout:hover { border-color: #b79cff; color: #b79cff; }
+  .btn-blowout:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .blowout-banner {
+    display: none; background: rgba(160,120,255,0.08);
+    border: 1px solid rgba(160,120,255,0.35); border-radius: 12px;
+    padding: 14px 18px; margin-bottom: 16px;
+  }
+  .blowout-banner.visible { display: block; }
+  .blowout-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .blowout-title { font-size: 0.85rem; font-weight: 700; color: #b79cff; }
+  .blowout-phase { font-size: 0.8rem; color: var(--muted); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .blowout-phase .time { color: var(--text); }
+  .blowout-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .blowout-fill { height: 100%; width: 0%; background: #b79cff; border-radius: 2px; transition: width 1s linear; }
+  .blowout-hint { font-size: 0.75rem; color: var(--muted); margin-top: 6px; font-family: 'DM Mono', monospace; }
 
   .event-duration {
     font-family: 'DM Mono', monospace; font-size: 0.78rem;
@@ -606,10 +630,23 @@
         <span class="queued-dot"></span>
         <span id="queued-label">1 schedule queued</span>
       </div>
+      <button class="btn-blowout" id="btn-blowout" onclick="openBlowout()">
+        <span>💨</span><span id="blowout-btn-label">Blowout Mode</span>
+      </button>
       <button class="btn-force-skip" id="btn-force-skip" onclick="toggleForceSkip()">
         <span id="force-skip-icon">⏭</span>
         <span id="force-skip-label">Skip Next Run</span>
       </button>
+    </div>
+    <div class="blowout-banner" id="blowout-banner">
+      <div class="blowout-top">
+        <div>
+          <div class="blowout-title" id="bo-title">Blowout</div>
+          <div class="blowout-phase" id="bo-phase"></div>
+        </div>
+        <button class="btn btn-stop" style="flex:none;" onclick="stopAll()">⏹ Stop</button>
+      </div>
+      <div class="blowout-bar"><div class="blowout-fill" id="bo-fill"></div></div>
     </div>
     <div class="zones-grid" id="zones-grid"></div>
   </div>
@@ -799,6 +836,33 @@
   </div>
 </div>
 
+<!-- Blowout Modal -->
+<div class="modal-overlay" id="blowout-modal">
+  <div class="modal">
+    <h2>Blowout Mode</h2>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+      For each enabled zone: wait for the compressor to charge, then open that zone to blow out. Repeats for every pass.
+    </p>
+    <div class="form-row">
+      <label>Passes through all zones</label>
+      <input type="number" id="bo-passes" min="1" max="20" value="3" oninput="updateBlowoutEstimate()">
+    </div>
+    <div class="form-row">
+      <label>Compressor charge time, zones off (minutes)</label>
+      <input type="number" id="bo-charge" min="0" max="30" step="0.5" value="5" oninput="updateBlowoutEstimate()">
+    </div>
+    <div class="form-row">
+      <label>Blow time per zone (seconds)</label>
+      <input type="number" id="bo-blow" min="1" max="300" value="30" oninput="updateBlowoutEstimate()">
+    </div>
+    <div class="blowout-hint" id="bo-estimate"></div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeBlowout()">Cancel</button>
+      <button class="btn btn-save" onclick="startBlowout()">Start Blowout</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -925,6 +989,91 @@ async function stopAll() {
   } catch(e) { showToast('Error: ' + e.message, true); }
 }
 
+// ─── Blowout mode ─────────────────────────────────────────────────────────────
+let blowoutData     = null;
+let blowoutDeadline = 0;
+
+function fmtClock(secs) {
+  secs = Math.max(0, Math.round(secs));
+  return Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+}
+
+function blowoutInputs() {
+  return {
+    passes:      parseInt(document.getElementById('bo-passes').value) || 1,
+    charge_secs: Math.round((parseFloat(document.getElementById('bo-charge').value) || 0) * 60),
+    blow_secs:   parseInt(document.getElementById('bo-blow').value) || 0,
+  };
+}
+
+function updateBlowoutEstimate() {
+  const { passes, charge_secs, blow_secs } = blowoutInputs();
+  const n     = zones.filter(z => z.enabled).length;
+  const total = passes * n * (charge_secs + blow_secs);
+  const h = Math.floor(total / 3600), m = Math.round((total % 3600) / 60);
+  document.getElementById('bo-estimate').textContent =
+    `${n} enabled zone${n === 1 ? '' : 's'} × ${passes} pass${passes === 1 ? '' : 'es'} · about ${h ? h + 'h ' : ''}${m}m total`;
+}
+
+async function openBlowout() {
+  if (blowoutData && blowoutData.active) return;
+  try {
+    const b = await api('/blowout');
+    document.getElementById('bo-passes').value = b.passes;
+    document.getElementById('bo-charge').value = Math.round(b.charge_secs / 6) / 10;
+    document.getElementById('bo-blow').value   = b.blow_secs;
+  } catch(e) { /* use defaults */ }
+  updateBlowoutEstimate();
+  document.getElementById('blowout-modal').classList.add('open');
+}
+
+function closeBlowout() { document.getElementById('blowout-modal').classList.remove('open'); }
+
+async function startBlowout() {
+  const body = blowoutInputs();
+  if (body.blow_secs < 1) return alert('Blow time must be at least 1 second');
+  try {
+    await api('/blowout', 'POST', body);
+    closeBlowout();
+    showToast('Blowout started');
+    await pollStatus();
+  } catch(e) { showToast('Error: ' + e.message, true); }
+}
+
+function renderBlowout(b) {
+  blowoutData = b || { active: false };
+  const banner = document.getElementById('blowout-banner');
+  const btn    = document.getElementById('btn-blowout');
+  const label  = document.getElementById('blowout-btn-label');
+  if (!blowoutData.active || !blowoutData.phase) {
+    banner.classList.remove('visible');
+    btn.disabled = false;
+    label.textContent = 'Blowout Mode';
+    return;
+  }
+  btn.disabled = true;
+  label.textContent = 'Blowout Running…';
+  banner.classList.add('visible');
+  blowoutDeadline = Date.now() + (blowoutData.remaining || 0) * 1000;
+  document.getElementById('bo-title').textContent =
+    `💨 Blowout · Pass ${blowoutData.pass_num}/${blowoutData.passes} · Zone ${blowoutData.zone_index}/${blowoutData.zone_count}`;
+  tickBlowout();
+}
+
+function tickBlowout() {
+  const b = blowoutData;
+  if (!b || !b.active || !b.phase) return;
+  const remaining = Math.max(0, (blowoutDeadline - Date.now()) / 1000);
+  const verb = b.phase === 'charging'
+    ? 'Charging compressor — all zones off'
+    : `Blowing out ${b.zone_name}`;
+  document.getElementById('bo-phase').innerHTML =
+    `${verb} · <span class="time">${fmtClock(remaining)}</span>`;
+  const pct = b.phase_secs ? Math.min(100, ((b.phase_secs - remaining) / b.phase_secs) * 100) : 100;
+  document.getElementById('bo-fill').style.width = pct + '%';
+}
+setInterval(tickBlowout, 1000);
+
 // ─── Force Skip ───────────────────────────────────────────────────────────────
 async function toggleForceSkip() {
   try {
@@ -986,6 +1135,8 @@ async function pollStatus() {
     if (prevRunAll !== runAllActive || prevSkip !== forceSkipArmed) {
       updateToolbarButtons();
     }
+
+    renderBlowout(data.blowout);
 
     // Queued-schedules badge
     const queued    = data.schedules_queued || 0;
@@ -1095,6 +1246,7 @@ function fmtTimestamp(iso) {
 function triggerLabel(t) {
   if (t === 'scheduled') return 'SCHEDULED';
   if (t === 'run_all')   return 'RUN ALL';
+  if (t === 'blowout')   return 'BLOWOUT';
   return 'MANUAL';
 }
 
