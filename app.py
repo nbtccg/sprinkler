@@ -82,7 +82,8 @@ def save_data():
 
 state = load_data()
 
-for _key, _default in [("last_skip", None), ("force_skip_next", False)]:
+for _key, _default in [("last_skip", None), ("force_skip_next", False),
+                       ("blowout", {"passes": 3, "charge_secs": 300, "blow_secs": 30})]:
     if _key not in state:
         state[_key] = _default
 
@@ -138,6 +139,10 @@ running: dict  = {}
 run_lock       = threading.Lock()
 run_all_active    = threading.Event()
 run_all_stop      = threading.Event()
+
+blowout_stop  = threading.Event()
+blowout_lock  = threading.Lock()
+blowout_state: dict = {"active": False}
 
 schedule_lock         = threading.Lock()
 schedules_queued      = 0
@@ -222,6 +227,7 @@ def stop_zone(zone_id: int) -> dict:
 
 def stop_all():
     run_all_stop.set()
+    blowout_stop.set()
     with run_lock:
         for info in running.values():
             info["stop_event"].set()
@@ -274,6 +280,82 @@ def _run_all_thread():
         finally:
             run_all_active.clear()
             log.info("Run-all sequence complete")
+
+
+# ── Blowout mode (winterization) ──────────────────────────────────────────────
+def _set_blowout(**kw):
+    with blowout_lock:
+        blowout_state.update(kw)
+
+def _blowout_snapshot() -> dict:
+    with blowout_lock:
+        b = dict(blowout_state)
+    if b.get("active") and "phase_end" in b:
+        b["remaining"] = max(0, round(b["phase_end"] - time.time()))
+    return b
+
+def _blowout_thread(passes: int, charge_secs: int, blow_secs: int):
+    """
+    For each pass, for each enabled zone: wait charge_secs (compressor
+    charging, all zones off), then open that zone for blow_secs.
+    """
+    with schedule_lock:
+        blowout_stop.clear()
+        zone_list   = [dict(z) for z in state["zones"] if z["enabled"]]
+        total_steps = passes * len(zone_list)
+        with blowout_lock:
+            blowout_state.clear()
+            blowout_state.update({
+                "active": True, "phase": "charging", "passes": passes,
+                "pass_num": 1, "zone_count": len(zone_list),
+                "total_steps": total_steps, "step": 0,
+                "charge_secs": charge_secs, "blow_secs": blow_secs,
+                "phase_secs": charge_secs, "phase_end": time.time() + charge_secs,
+            })
+        log.info(f"Blowout started: {passes} pass(es), {len(zone_list)} zones, "
+                 f"{charge_secs}s charge / {blow_secs}s blow")
+        aborted = False
+        try:
+            step = 0
+            for p in range(1, passes + 1):
+                if aborted:
+                    break
+                for idx, zone in enumerate(zone_list, 1):
+                    step += 1
+                    if not state["master_enabled"]:
+                        log.info("Blowout aborted: master disabled")
+                        aborted = True
+                        break
+                    _set_blowout(
+                        phase="charging", pass_num=p, zone_id=zone["id"],
+                        zone_name=zone["name"], zone_index=idx, step=step,
+                        phase_secs=charge_secs, phase_end=time.time() + charge_secs,
+                    )
+                    if blowout_stop.wait(charge_secs):
+                        aborted = True
+                        break
+                    result = start_zone(zone["id"], blow_secs, trigger="blowout")
+                    if "error" in result:
+                        log.warning(f"Blowout: zone {zone['id']} skipped - {result['error']}")
+                        continue
+                    _set_blowout(phase="blowing", phase_secs=blow_secs,
+                                 phase_end=time.time() + blow_secs)
+                    if blowout_stop.wait(blow_secs):
+                        stop_zone(zone["id"])
+                        aborted = True
+                        break
+                    # let the zone thread finish closing the relay
+                    for _ in range(10):
+                        with run_lock:
+                            still = zone["id"] in running
+                        if not still:
+                            break
+                        time.sleep(0.5)
+        finally:
+            with blowout_lock:
+                blowout_state.clear()
+                blowout_state["active"] = False
+            log.info("Blowout aborted" if aborted else "Blowout complete")
 
 
 # ── Weather fetcher ────────────────────────────────────────────────────────────
@@ -560,9 +642,43 @@ def stop_all_route():
 def run_all_route():
     if not state["master_enabled"]:
         return jsonify({"error": "Master switch is disabled"}), 400
+    if blowout_state.get("active"):
+        return jsonify({"error": "Blowout is running"}), 409
     if run_all_active.is_set():
         return jsonify({"error": "Run-all sequence already in progress"}), 409
     threading.Thread(target=_run_all_thread, daemon=True).start()
+    return jsonify({"ok": True})
+
+@app.route("/api/blowout", methods=["GET"])
+def get_blowout():
+    return jsonify(state["blowout"])
+
+@app.route("/api/blowout", methods=["POST"])
+def start_blowout_route():
+    body = request.get_json(silent=True, force=True) or {}
+    try:
+        passes      = int(body.get("passes", 3))
+        charge_secs = int(body.get("charge_secs", 300))
+        blow_secs   = int(body.get("blow_secs", 30))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid blowout settings"}), 400
+    if not (1 <= passes <= 20):
+        return jsonify({"error": "Passes must be 1-20"}), 400
+    if not (0 <= charge_secs <= 1800):
+        return jsonify({"error": "Charge time must be 0-30 minutes"}), 400
+    if not (1 <= blow_secs <= 300):
+        return jsonify({"error": "Blow time must be 1-300 seconds"}), 400
+    if not state["master_enabled"]:
+        return jsonify({"error": "Master switch is disabled"}), 400
+    if not any(z["enabled"] for z in state["zones"]):
+        return jsonify({"error": "No enabled zones"}), 400
+    if blowout_state.get("active") or run_all_active.is_set() or schedule_lock.locked():
+        return jsonify({"error": "Another sequence is already running"}), 409
+    state["blowout"] = {"passes": passes, "charge_secs": charge_secs, "blow_secs": blow_secs}
+    save_data()
+    _set_blowout(active=True)
+    threading.Thread(target=_blowout_thread, args=(passes, charge_secs, blow_secs),
+                     daemon=True).start()
     return jsonify({"ok": True})
 
 @app.route("/api/force_skip", methods=["POST"])
@@ -599,6 +715,7 @@ def status():
         "run_all_active":   run_all_active.is_set(),
         "schedule_busy":    schedule_lock.locked(),
         "schedules_queued": queued,
+        "blowout":          _blowout_snapshot(),
     })
 
 @app.route("/api/events", methods=["GET"])
